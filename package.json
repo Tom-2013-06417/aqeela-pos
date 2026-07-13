@@ -1,0 +1,12 @@
+{
+  "name": "pos",
+  "private": true,
+  "workspaces": [
+    "app/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@pos/www",
+    "build": "npm run build --workspace=@pos/www"
+  }
+}

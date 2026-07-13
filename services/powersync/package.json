@@ -1,0 +1,6 @@
+{
+  "name": "@pos/powersync",
+  "private": true,
+  "version": "0.0.1",
+  "description": "PowerSync service — Docker + Railway deploy config"
+}
