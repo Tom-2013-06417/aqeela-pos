@@ -6,7 +6,7 @@
     "services/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@pos/www",
+    "dev": "npm run dev -w @pos/www --",
     "build": "npm run build --workspace=@pos/www"
   }
 }
