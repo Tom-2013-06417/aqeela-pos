@@ -91,6 +91,28 @@ npm run dev
 
 Or from `app/www`: `npm run dev`
 
+### Offline app shell (PWA)
+
+The production build registers a service worker that precaches JS, CSS, WASM, and worker assets so the UI loads without network after the first visit.
+
+```bash
+npm run build
+npm run preview -w @pos/www
+```
+
+Open `https://localhost:4173` (accept the self-signed cert), sign in once, then use DevTools → Network → Offline and refresh — the app should still load. Data continues to come from local PowerSync SQLite.
+
+On a tablet, use **Add to Home Screen** for a standalone kiosk-style launch.
+
+| Step | Expected |
+| --- | --- |
+| First visit online | Service worker installs; "App is ready for offline use" banner |
+| Refresh while offline | App shell loads from cache |
+| Close tab, reopen offline | Login session + POS work if previously signed in |
+| New deploy | "A new version is available" banner; refresh when idle |
+
+Service workers are disabled in `npm run dev` (HMR conflict). Test offline behavior with `build` + `preview`, or a deployed HTTPS host.
+
 ## 4. Verify
 
 | Step | Expected |
@@ -99,6 +121,7 @@ Or from `app/www`: `npm run dev`
 | Sell item | Stock drops, sale in Recent sales |
 | Supabase tables | `sales`, `sale_lines`, `products` updated |
 | Offline sale | Works without network; uploads on reconnect |
+| Offline refresh | App shell loads from service worker cache (production build) |
 
 ## Troubleshooting
 

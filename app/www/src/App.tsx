@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { PowerSyncContext, useQuery, useStatus } from '@powersync/react';
 import { SupabaseConnector } from './connector';
+import { PwaBanner } from './PwaBanner';
 import { db } from './powerSync';
 import {
   PRODUCTS_TABLE,
@@ -50,6 +51,12 @@ function LoginScreen({ connector }: { connector: SupabaseConnector }) {
     <div className="card login-card">
       <h1>POS Spike</h1>
       <p className="muted">Supabase Auth + self-hosted PowerSync</p>
+      {!navigator.onLine && (
+        <p className="error">
+          Offline — sign-in needs network. If you signed in earlier on this device, refresh after reconnecting once, then
+          the app will work offline.
+        </p>
+      )}
       <form onSubmit={handleSubmit}>
         <label>
           Email
@@ -60,7 +67,7 @@ function LoginScreen({ connector }: { connector: SupabaseConnector }) {
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
         {error && <p className="error">{error}</p>}
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading || !navigator.onLine}>
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
@@ -350,7 +357,12 @@ export function App() {
         await connector.init();
         if (!active) return;
         setReady(true);
-        setSession(connector.currentSession);
+        const current = connector.currentSession;
+        setSession(current);
+        if (current) {
+          // Connect even when offline — PowerSync serves local SQLite; sync resumes later.
+          void db.connect(connector);
+        }
       } catch (err) {
         console.error('App startup failed', err);
         if (!active) return;
@@ -360,8 +372,11 @@ export function App() {
 
     const {
       data: { subscription }
-    } = connector.client.auth.onAuthStateChange((_event, nextSession) => {
+    } = connector.client.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      if (event === 'SIGNED_OUT' && !navigator.onLine) {
+        return;
+      }
       setSession(nextSession);
       if (nextSession) {
         void (async () => {
@@ -405,6 +420,7 @@ export function App() {
 
   return (
     <PowerSyncContext.Provider value={db}>
+      <PwaBanner />
       <div className="page">
         {session ? (
           <PosScreen connector={connector} onSignOut={handleSignOut} />

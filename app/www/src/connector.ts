@@ -43,8 +43,24 @@ export class SupabaseConnector
     }
 
     this.client = createClient(this.supabaseUrl, anonKey, {
-      auth: { persistSession: true }
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true
+      }
     });
+
+    if (typeof window !== 'undefined') {
+      const syncTokenRefresh = () => {
+        if (navigator.onLine) {
+          void this.client.auth.startAutoRefresh();
+        } else {
+          void this.client.auth.stopAutoRefresh();
+        }
+      };
+      window.addEventListener('online', syncTokenRefresh);
+      window.addEventListener('offline', syncTokenRefresh);
+      syncTokenRefresh();
+    }
   }
 
   async init() {
@@ -54,10 +70,19 @@ export class SupabaseConnector
     }
 
     if (!this.authSubscription) {
-      const { data } = this.client.auth.onAuthStateChange((_event, session) => {
+      const { data } = this.client.auth.onAuthStateChange((event, session) => {
+        // Offline refresh failures can emit SIGNED_OUT even though local SQLite
+        // still needs the last session (cashier id / store assignment).
+        if (event === 'SIGNED_OUT' && typeof navigator !== 'undefined' && !navigator.onLine) {
+          return;
+        }
         this.updateSession(session);
       });
       this.authSubscription = data.subscription;
+    }
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      void this.client.auth.stopAutoRefresh();
     }
 
     const { data } = await this.client.auth.getSession();
@@ -67,6 +92,9 @@ export class SupabaseConnector
   }
 
   async login(email: string, password: string) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('Sign-in needs network. Open the app online once, then you can use it offline.');
+    }
     const { data, error } = await this.client.auth.signInWithPassword({ email, password });
     if (error) throw error;
     this.updateSession(data.session);

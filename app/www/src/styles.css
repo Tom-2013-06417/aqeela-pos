@@ -179,3 +179,20 @@ button.secondary {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
+
+.pwa-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: #1e3a8a;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.pwa-banner button {
+  background: #fff;
+  color: #1e3a8a;
+  padding: 0.35rem 0.75rem;
+}
