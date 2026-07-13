@@ -17,6 +17,7 @@ const FATAL_RESPONSE_CODES = [
 export type SupabaseConnectorListener = {
   initialized: () => void;
   sessionStarted: (session: Session) => void;
+  sessionEnded: () => void;
 };
 
 export class SupabaseConnector
@@ -29,6 +30,7 @@ export class SupabaseConnector
 
   ready = false;
   currentSession: Session | null = null;
+  private authSubscription: { unsubscribe: () => void } | null = null;
 
   constructor() {
     super();
@@ -46,7 +48,17 @@ export class SupabaseConnector
   }
 
   async init() {
-    if (this.ready) return;
+    if (this.ready) {
+      this.iterateListeners((cb) => cb.initialized?.());
+      return;
+    }
+
+    if (!this.authSubscription) {
+      const { data } = this.client.auth.onAuthStateChange((_event, session) => {
+        this.updateSession(session);
+      });
+      this.authSubscription = data.subscription;
+    }
 
     const { data } = await this.client.auth.getSession();
     this.updateSession(data.session);
@@ -61,8 +73,9 @@ export class SupabaseConnector
   }
 
   async logout() {
-    await this.client.auth.signOut();
     this.updateSession(null);
+    const { error } = await this.client.auth.signOut({ scope: 'local' });
+    if (error) throw error;
   }
 
   async fetchCredentials(): Promise<PowerSyncCredentials> {
@@ -123,9 +136,12 @@ export class SupabaseConnector
   }
 
   private updateSession(session: Session | null) {
+    const hadSession = this.currentSession !== null;
     this.currentSession = session;
     if (session) {
       this.iterateListeners((cb) => cb.sessionStarted?.(session));
+    } else if (hadSession) {
+      this.iterateListeners((cb) => cb.sessionEnded?.());
     }
   }
 }

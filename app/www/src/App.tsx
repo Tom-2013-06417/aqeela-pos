@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { PowerSyncContext, useQuery, useStatus } from '@powersync/react';
 import { SupabaseConnector } from './connector';
 import { db } from './powerSync';
@@ -26,7 +27,7 @@ function useDiagnosticsEnabled() {
   );
 }
 
-function LoginScreen({ connector, onLoggedIn }: { connector: SupabaseConnector; onLoggedIn: () => void }) {
+function LoginScreen({ connector }: { connector: SupabaseConnector }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,6 @@ function LoginScreen({ connector, onLoggedIn }: { connector: SupabaseConnector; 
     setError(null);
     try {
       await connector.login(email, password);
-      onLoggedIn();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -68,14 +68,30 @@ function LoginScreen({ connector, onLoggedIn }: { connector: SupabaseConnector; 
   );
 }
 
-function PosScreen({ connector }: { connector: SupabaseConnector }) {
+function PosScreen({
+  connector,
+  onSignOut
+}: {
+  connector: SupabaseConnector;
+  onSignOut: () => Promise<void>;
+}) {
   const status = useStatus();
   const showDiagnostics = useDiagnosticsEnabled();
   const [search, setSearch] = useState('');
   const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [remote, setRemote] = useState<RemoteDiagnostics | null>(null);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await onSignOut();
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   const userId = connector.currentSession?.user?.id ?? '';
   const downloadError = status.dataFlowStatus?.downloadError?.message;
@@ -202,8 +218,8 @@ function PosScreen({ connector }: { connector: SupabaseConnector }) {
             {status.hasSynced ? 'Synced' : 'Syncing…'}
           </span>
           <span className="pill">{navigator.onLine ? 'Online' : 'Offline mode'}</span>
-          <button type="button" className="secondary" onClick={() => connector.logout()}>
-            Sign out
+          <button type="button" className="secondary" disabled={signingOut} onClick={() => void handleSignOut()}>
+            {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
         </div>
       </header>
@@ -302,28 +318,44 @@ function PosScreen({ connector }: { connector: SupabaseConnector }) {
 export function App() {
   const [connector] = useState(() => new SupabaseConnector());
   const [ready, setReady] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    void db.init();
-    const listener = connector.registerListener({
-      initialized: () => {
-        setReady(true);
-        setLoggedIn(!!connector.currentSession);
-      },
-      sessionStarted: () => {
-        setLoggedIn(true);
+    let active = true;
+
+    void (async () => {
+      await db.init();
+      await connector.init();
+      if (!active) return;
+      setReady(true);
+      setSession(connector.currentSession);
+    })();
+
+    const {
+      data: { subscription }
+    } = connector.client.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
+      setSession(nextSession);
+      if (nextSession) {
         void (async () => {
           await db.init();
           await db.connect(connector);
         })();
+      } else {
+        void db.disconnect();
       }
     });
 
-    connector.init();
-
-    return () => listener();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [connector]);
+
+  async function handleSignOut() {
+    setSession(null);
+    await connector.logout();
+  }
 
   if (!ready) {
     return <div className="page">Loading…</div>;
@@ -332,10 +364,10 @@ export function App() {
   return (
     <PowerSyncContext.Provider value={db}>
       <div className="page">
-        {loggedIn ? (
-          <PosScreen connector={connector} />
+        {session ? (
+          <PosScreen connector={connector} onSignOut={handleSignOut} />
         ) : (
-          <LoginScreen connector={connector} onLoggedIn={() => setLoggedIn(true)} />
+          <LoginScreen connector={connector} />
         )}
       </div>
     </PowerSyncContext.Provider>
