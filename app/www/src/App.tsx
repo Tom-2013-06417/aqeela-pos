@@ -19,6 +19,13 @@ function formatMoney(cents: number) {
   return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 }
 
+function useDiagnosticsEnabled() {
+  return useMemo(
+    () => new URLSearchParams(window.location.search).get('diagnostics') === 'true',
+    []
+  );
+}
+
 function LoginScreen({ connector, onLoggedIn }: { connector: SupabaseConnector; onLoggedIn: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +70,7 @@ function LoginScreen({ connector, onLoggedIn }: { connector: SupabaseConnector; 
 
 function PosScreen({ connector }: { connector: SupabaseConnector }) {
   const status = useStatus();
+  const showDiagnostics = useDiagnosticsEnabled();
   const [search, setSearch] = useState('');
   const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -73,6 +81,8 @@ function PosScreen({ connector }: { connector: SupabaseConnector }) {
   const downloadError = status.dataFlowStatus?.downloadError?.message;
 
   useEffect(() => {
+    if (!showDiagnostics) return;
+
     async function loadRemoteDiagnostics() {
       const { data: sessionData } = await connector.client.auth.getSession();
       if (!sessionData.session) return;
@@ -88,7 +98,7 @@ function PosScreen({ connector }: { connector: SupabaseConnector }) {
     }
 
     void loadRemoteDiagnostics();
-  }, [connector, userId, status.hasSynced]);
+  }, [connector, showDiagnostics, userId, status.hasSynced]);
 
   const { data: staffRows = [] } = useQuery<{ id: string; store_id: string; role: string }>(
     userId
@@ -201,16 +211,18 @@ function PosScreen({ connector }: { connector: SupabaseConnector }) {
       {message && <p className={message.startsWith('Sold') ? 'success' : 'error'}>{message}</p>}
       {downloadError && <p className="error">Sync error: {downloadError}</p>}
 
-      <section className="card diagnostics">
-        <h2>Diagnostics</h2>
-        <ul className="diag-list">
-          <li>Logged-in user: <code>{userId || 'unknown'}</code></li>
-          <li>PowerSync: {status.connected ? 'connected' : 'not connected'} · {status.hasSynced ? 'synced' : 'not synced yet'}</li>
-          <li>Remote store_staff: {remote?.staffCount ?? '…'}{remote?.staffError ? ` — ${remote.staffError}` : ''}</li>
-          <li>Local products: {products.length}</li>
-          <li>Local store_staff: {staffRows.length}</li>
-        </ul>
-      </section>
+      {showDiagnostics && (
+        <section className="card diagnostics">
+          <h2>Diagnostics</h2>
+          <ul className="diag-list">
+            <li>Logged-in user: <code>{userId || 'unknown'}</code></li>
+            <li>PowerSync: {status.connected ? 'connected' : 'not connected'} · {status.hasSynced ? 'synced' : 'not synced yet'}</li>
+            <li>Remote store_staff: {remote?.staffCount ?? '…'}{remote?.staffError ? ` — ${remote.staffError}` : ''}</li>
+            <li>Local products: {products.length}</li>
+            <li>Local store_staff: {staffRows.length}</li>
+          </ul>
+        </section>
+      )}
 
       <section className="card">
         <label className="search">
