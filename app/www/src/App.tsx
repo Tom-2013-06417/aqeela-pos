@@ -315,20 +315,47 @@ function PosScreen({
   );
 }
 
+function startupErrorMessage(err: unknown) {
+  if (!window.isSecureContext) {
+    return (
+      'PowerSync needs a secure browser context (HTTPS). ' +
+      'On this device, open https://<your-computer-ip>:5173 instead of http://…, ' +
+      'then accept the browser security warning for the local dev certificate.'
+    );
+  }
+
+  const message = err instanceof Error ? err.message : 'Startup failed';
+  if (/secure context|navigator locks/i.test(message)) {
+    return (
+      'PowerSync could not start because this page is not served over HTTPS. ' +
+      'Use https://<your-computer-ip>:5173 from other devices on your network.'
+    );
+  }
+
+  return message;
+}
+
 export function App() {
   const [connector] = useState(() => new SupabaseConnector());
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [startupError, setStartupError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     void (async () => {
-      await db.init();
-      await connector.init();
-      if (!active) return;
-      setReady(true);
-      setSession(connector.currentSession);
+      try {
+        await db.init();
+        await connector.init();
+        if (!active) return;
+        setReady(true);
+        setSession(connector.currentSession);
+      } catch (err) {
+        console.error('App startup failed', err);
+        if (!active) return;
+        setStartupError(startupErrorMessage(err));
+      }
     })();
 
     const {
@@ -355,6 +382,21 @@ export function App() {
   async function handleSignOut() {
     setSession(null);
     await connector.logout();
+  }
+
+  if (startupError) {
+    return (
+      <div className="page">
+        <div className="card login-card">
+          <h1>POS Spike</h1>
+          <p className="error">{startupError}</p>
+          <p className="muted">
+            Current URL: <code>{window.location.href}</code>
+            {window.isSecureContext ? ' (secure)' : ' (not secure)'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (!ready) {

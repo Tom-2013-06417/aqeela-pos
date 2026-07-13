@@ -117,3 +117,7 @@ select slot_name, pg_drop_replication_slot(slot_name)
 from pg_replication_slots
 where active = false and slot_name like 'powersync%';
 ```
+
+**Tablet stuck on "Loading…"** — PowerSync needs `navigator.locks`, which browsers only expose in a *secure context*. `http://localhost` counts, but `http://192.168.x.x` does not. Run `npm run dev`, then on the tablet open `https://<your-computer-ip>:5173` (note **https**), and accept the self-signed certificate warning. The dev server enables HTTPS automatically via `@vitejs/plugin-basic-ssl`.
+
+**Remote debugging without tablet DevTools** — iPad: enable **Settings → Safari → Advanced → Web Inspector**, connect the tablet to a Mac, then use **Safari → Develop → [your iPad]**. Android Chrome: open `chrome://inspect` on your desktop while the tablet is on USB debugging.
