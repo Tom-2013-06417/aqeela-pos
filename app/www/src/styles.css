@@ -27,7 +27,6 @@
   --nav-width: 11rem;
   --nav-width-collapsed: 4.25rem;
   --order-width: 22rem;
-  --tile-min: 10.5rem;
 
   --radius: 0;
   --touch: 2.75rem;
@@ -373,26 +372,15 @@ button:disabled {
 .product-tile {
   display: flex;
   flex-direction: column;
-  flex: 1 1 var(--tile-min);
-  max-width: calc(50% - 0.375rem);
+  flex: 0 0 calc((100% - 2.25rem) / 4);
+  width: calc((100% - 2.25rem) / 4);
+  max-width: calc((100% - 2.25rem) / 4);
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  min-width: var(--tile-min);
+  min-width: 0;
   min-height: 0;
-}
-
-@media (min-width: 1100px) {
-  .product-tile {
-    max-width: calc(33.333% - 0.5rem);
-  }
-}
-
-@media (min-width: 1400px) {
-  .product-tile {
-    max-width: calc(25% - 0.565rem);
-  }
 }
 
 .product-tile.in-cart {
@@ -672,6 +660,7 @@ button:disabled {
 
 .panel-view .card {
   margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
 }
 
 .panel-view .product-grid {
@@ -697,21 +686,152 @@ button:disabled {
   background: var(--surface);
 }
 
+/* Compact inventory editor */
+
+.inventory-section h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--line);
+  background: var(--surface);
+}
+
+.inventory-row {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--touch);
+  border-bottom: 2px solid var(--line);
+}
+
+.inventory-list .inventory-row:last-child {
+  border-bottom: none;
+}
+
+.inventory-row > * {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--touch);
+  height: var(--touch);
+  padding: 0 0.65rem;
+  border: none;
+  border-right: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.inventory-row > *:last-child {
+  border-right: none;
+}
+
+.inventory-name {
+  flex: 1 1 auto;
+}
+
+.inventory-price,
+.inventory-stock {
+  flex: 0 0 10.5rem;
+  font-family: var(--font-mono);
+}
+
+.inventory-unit {
+  flex: 0 0 4.5rem;
+  justify-content: center;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-unit-input {
+  justify-content: flex-start;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.inventory-action {
+  flex: 0 0 5.5rem;
+  justify-content: center;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.inventory-action:hover:not(:disabled) {
+  background: #222222;
+}
+
+.inventory-head {
+  background: #000000;
+}
+
+.inventory-head > * {
+  background: #000000;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inventory-add {
+  border: 2px solid var(--line);
+}
+
+.inventory-row input:focus {
+  outline: 2px solid #0033cc;
+  outline-offset: -2px;
+  z-index: 1;
+}
+
 .row {
   display: flex;
-  gap: 0.5rem;
+  gap: 0;
   flex-wrap: wrap;
   margin-top: 0.5rem;
-  align-items: end;
+  align-items: stretch;
+  border: 2px solid var(--line);
 }
 
 .row label {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  justify-content: center;
+  gap: 0;
   margin-bottom: 0;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-right: 2px solid var(--line);
+  padding: 0;
+  min-height: var(--touch);
+  flex: 1 1 8rem;
+}
+
+.row label:has(+ button),
+.row label:last-child {
+  border-right: none;
 }
 
 .row input,
@@ -719,21 +839,28 @@ button:disabled {
 .staff-table select,
 .panel-view input,
 .panel-view select {
-  padding: 0.55rem 0.7rem;
-  border: 2px solid var(--line-strong);
-  border-radius: 8px;
+  height: var(--touch);
+  min-height: var(--touch);
+  padding: 0 0.65rem;
+  border: none;
+  border-radius: 0;
   background: var(--surface);
   color: var(--ink);
 }
 
 .row button,
 .staff-table button {
-  padding: 0.55rem 0.85rem;
-  border: 2px solid #000000;
-  border-radius: 8px;
+  height: var(--touch);
+  min-height: var(--touch);
+  padding: 0 0.9rem;
+  border: none;
+  border-left: 2px solid var(--line);
   background: #000000;
   color: #ffffff;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
 }
 
 .panel-view button.secondary,
@@ -749,14 +876,16 @@ button:disabled {
 }
 
 .admin-form {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 2px solid var(--line);
 }
 
 .admin-form h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .staff-table-wrap {
@@ -770,11 +899,23 @@ button:disabled {
   font-size: 0.95rem;
 }
 
+.inventory-row > select {
+  appearance: none;
+  cursor: pointer;
+}
+
+.staff-table select,
+.staff-table button {
+  height: var(--touch);
+  min-height: var(--touch);
+  padding: 0 0.65rem;
+}
+
 .staff-table th,
 .staff-table td {
   text-align: left;
-  padding: 0.5rem 0.4rem;
-  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 0.4rem;
+  border-bottom: 2px solid var(--line);
   vertical-align: middle;
 }
 
@@ -938,9 +1079,5 @@ button:disabled {
     width: 100%;
     min-width: 0;
     height: min(42vh, 22rem);
-  }
-
-  .product-tile {
-    max-width: calc(50% - 0.375rem);
   }
 }
