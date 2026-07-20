@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { refreshPwa, subscribePwaUpdates } from './pwa';
+import { refreshPwa, subscribePwaUpdates } from '../pwa';
+import './PwaBanner.css';
 
 export function PwaBanner() {
   const [needRefresh, setNeedRefresh] = useState(false);

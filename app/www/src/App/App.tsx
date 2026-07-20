@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { PowerSyncContext, useQuery, useStatus } from '@powersync/react';
-import { AdminScreen } from './AdminScreen';
-import { CashierScreen } from './CashierScreen';
-import { SupabaseConnector } from './connector';
-import { PwaBanner } from './PwaBanner';
-import { db } from './powerSync';
-import { SalesScreen } from './SalesScreen';
-import { SideNav, type AppView } from './SideNav';
-import { STORE_STAFF_TABLE } from './schema';
+import { AdminScreen } from '../AdminScreen/AdminScreen';
+import { CashierScreen } from '../CashierScreen/CashierScreen';
+import { SupabaseConnector } from '../connector';
+import { PwaBanner } from '../PwaBanner/PwaBanner';
+import { db } from '../powerSync';
+import { SalesScreen } from '../SalesScreen/SalesScreen';
+import { SideNav, type AppView } from '../SideNav/SideNav';
+import { STORE_STAFF_TABLE } from '../schema';
+import './App.css';
 
 function useDiagnosticsEnabled() {
   return useMemo(

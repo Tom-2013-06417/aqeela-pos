@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
-import type { SupabaseConnector } from './connector';
-import { db } from './powerSync';
+import type { SupabaseConnector } from '../connector';
+import { db } from '../powerSync';
 import {
   PRODUCTS_TABLE,
   SALE_LINES_TABLE,
   SALES_TABLE,
   STORE_STAFF_TABLE,
   type ProductRecord
-} from './schema';
+} from '../schema';
+import './CashierScreen.css';
 
 function formatMoney(cents: number) {
   return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;

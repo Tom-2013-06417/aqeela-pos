@@ -1,0 +1,24 @@
+.pwa-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1rem;
+  background: #000000;
+  color: #ffffff;
+  font-size: 0.9rem;
+  border-bottom: 2px solid #ffcc00;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pwa-banner button {
+  background: #ffcc00;
+  color: #000000;
+  border: 2px solid #ffffff;
+  border-radius: 0;
+  padding: 0.35rem 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

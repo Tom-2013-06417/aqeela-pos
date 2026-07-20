@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import './SideNav.css';
 
 export type AppView = 'cashier' | 'sales' | 'inventory' | 'users';
 

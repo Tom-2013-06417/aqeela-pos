@@ -1,5 +1,7 @@
 import { useQuery } from '@powersync/react';
-import { SALES_TABLE } from './schema';
+import { SALES_TABLE } from '../schema';
+import '../styles/panel-view.css';
+import './SalesScreen.css';
 
 function formatMoney(cents: number) {
   return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;

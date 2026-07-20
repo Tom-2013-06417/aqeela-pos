@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
-import type { SupabaseConnector } from './connector';
-import { db } from './powerSync';
+import type { SupabaseConnector } from '../connector';
+import { db } from '../powerSync';
 import {
   PRODUCTS_TABLE,
   STORE_STAFF_TABLE,
   type ProductRecord
-} from './schema';
+} from '../schema';
+import '../styles/panel-view.css';
+import './AdminScreen.css';
 
 type StaffRow = {
   user_id: string;
