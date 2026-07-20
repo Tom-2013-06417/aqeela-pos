@@ -17,10 +17,6 @@ type StaffRow = {
 
 type StaffRole = 'cashier' | 'admin';
 
-function formatMoney(cents: number) {
-  return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-}
-
 function shortId(id: string) {
   return id.length > 12 ? `${id.slice(0, 8)}…` : id;
 }
@@ -321,11 +317,19 @@ export function AdminScreen({
       )}
 
       {showInventory && (
-      <section className="card">
+      <section className="card inventory-section">
         {section === 'all' && <h2>Inventory</h2>}
         {section === 'all' && <p className="muted">Edit stock, name, or price. Changes sync when online.</p>}
 
-        <div className="product-grid">
+        <div className="inventory-list">
+          <div className="inventory-row inventory-head" aria-hidden="true">
+            <span className="inventory-name">Name</span>
+            <span className="inventory-price">Price (₱)</span>
+            <span className="inventory-stock">Stock</span>
+            <span className="inventory-unit">Unit</span>
+            <span className="inventory-action" />
+          </div>
+
           {products.map((product) => {
             const nameVal = draftName[product.id] ?? product.name ?? '';
             const priceVal =
@@ -333,43 +337,43 @@ export function AdminScreen({
             const stockVal = draftStock[product.id] ?? String(product.stock_qty ?? '0');
 
             return (
-              <article key={product.id} className="product-card">
-                <label>
-                  Name
-                  <input
-                    value={nameVal}
-                    onChange={(e) => setDraftName((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                  />
-                </label>
-                <p className="muted">
-                  {formatMoney(product.price_cents ?? 0)} / {product.unit} (current)
-                </p>
-                <div className="row">
-                  <label>
-                    Price (₱)
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={priceVal}
-                      onChange={(e) => setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                    />
-                  </label>
-                  <label>
-                    Stock ({product.unit})
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={stockVal}
-                      onChange={(e) => setDraftStock((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                    />
-                  </label>
-                  <button type="button" disabled={busy} onClick={() => void saveProduct(product)}>
-                    Save
-                  </button>
-                </div>
-              </article>
+              <div key={product.id} className="inventory-row">
+                <input
+                  className="inventory-name"
+                  aria-label={`Name for ${product.name}`}
+                  value={nameVal}
+                  onChange={(e) => setDraftName((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                />
+                <input
+                  className="inventory-price"
+                  aria-label={`Price for ${product.name}`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={priceVal}
+                  onChange={(e) => setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                />
+                <input
+                  className="inventory-stock"
+                  aria-label={`Stock for ${product.name}`}
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={stockVal}
+                  onChange={(e) => setDraftStock((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                />
+                <span className="inventory-unit" title={product.unit ?? ''}>
+                  {product.unit}
+                </span>
+                <button
+                  type="button"
+                  className="inventory-action"
+                  disabled={busy}
+                  onClick={() => void saveProduct(product)}
+                >
+                  Save
+                </button>
+              </div>
             );
           })}
         </div>
@@ -382,38 +386,46 @@ export function AdminScreen({
 
         <form className="admin-form" onSubmit={(e) => void addProduct(e)}>
           <h3>Add product</h3>
-          <div className="row">
-            <label>
-              Name
-              <input value={newName} onChange={(e) => setNewName(e.target.value)} required />
-            </label>
-            <label>
-              Unit
-              <input value={newUnit} onChange={(e) => setNewUnit(e.target.value)} required />
-            </label>
-            <label>
-              Price (₱)
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={newPrice}
-                onChange={(e) => setNewPrice(e.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Stock
-              <input
-                type="number"
-                min="0"
-                step="0.001"
-                value={newStock}
-                onChange={(e) => setNewStock(e.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" disabled={busy || !storeId}>
+          <div className="inventory-row inventory-add">
+            <input
+              className="inventory-name"
+              aria-label="New product name"
+              placeholder="Name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              required
+            />
+            <input
+              className="inventory-price"
+              aria-label="New product price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Price"
+              value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value)}
+              required
+            />
+            <input
+              className="inventory-stock"
+              aria-label="New product stock"
+              type="number"
+              min="0"
+              step="0.001"
+              placeholder="Stock"
+              value={newStock}
+              onChange={(e) => setNewStock(e.target.value)}
+              required
+            />
+            <input
+              className="inventory-unit inventory-unit-input"
+              aria-label="New product unit"
+              placeholder="Unit"
+              value={newUnit}
+              onChange={(e) => setNewUnit(e.target.value)}
+              required
+            />
+            <button type="submit" className="inventory-action" disabled={busy || !storeId}>
               Add
             </button>
           </div>
@@ -479,24 +491,25 @@ export function AdminScreen({
 
         <form className="admin-form" onSubmit={(e) => void linkStaff(e)}>
           <h3>Link Auth user</h3>
-          <div className="row">
-            <label className="grow">
-              User UUID
-              <input
-                value={linkUserId}
-                onChange={(e) => setLinkUserId(e.target.value)}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                required
-              />
-            </label>
-            <label>
-              Role
-              <select value={linkRole} onChange={(e) => setLinkRole(e.target.value as StaffRole)}>
-                <option value="cashier">cashier</option>
-                <option value="admin">admin</option>
-              </select>
-            </label>
-            <button type="submit" disabled={busy || !storeId || !navigator.onLine}>
+          <div className="inventory-row inventory-add">
+            <input
+              className="inventory-name"
+              aria-label="User UUID"
+              value={linkUserId}
+              onChange={(e) => setLinkUserId(e.target.value)}
+              placeholder="User UUID"
+              required
+            />
+            <select
+              className="inventory-unit inventory-unit-input"
+              aria-label="Role"
+              value={linkRole}
+              onChange={(e) => setLinkRole(e.target.value as StaffRole)}
+            >
+              <option value="cashier">cashier</option>
+              <option value="admin">admin</option>
+            </select>
+            <button type="submit" className="inventory-action" disabled={busy || !storeId || !navigator.onLine}>
               Link
             </button>
           </div>
