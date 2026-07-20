@@ -27,15 +27,13 @@ function shortId(id: string) {
 
 export function AdminScreen({
   connector,
-  onSignOut,
-  onOpenPos
+  section = 'all'
 }: {
   connector: SupabaseConnector;
-  onSignOut: () => Promise<void>;
-  onOpenPos: () => void;
+  /** When embedded in the POS shell, show one admin section at a time. */
+  section?: 'all' | 'inventory' | 'users';
 }) {
   const status = useStatus();
-  const [signingOut, setSigningOut] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -97,15 +95,6 @@ export function AdminScreen({
   useEffect(() => {
     void loadStaff();
   }, [loadStaff]);
-
-  async function handleSignOut() {
-    setSigningOut(true);
-    try {
-      await onSignOut();
-    } finally {
-      setSigningOut(false);
-    }
-  }
 
   async function saveProduct(product: ProductRecord) {
     const name = (draftName[product.id] ?? product.name ?? '').trim();
@@ -302,41 +291,39 @@ export function AdminScreen({
     }
   }
 
+  const showInventory = section === 'all' || section === 'inventory';
+  const showUsers = section === 'all' || section === 'users';
+
   return (
-    <div className="layout">
-      <header className="header">
-        <div>
-          <h1>Admin</h1>
-          <p className="muted">{connector.currentSession?.user?.email}</p>
-        </div>
-        <div className="status-row">
-          <span className={`pill ${status.connected ? 'ok' : 'warn'}`}>
-            {status.connected ? 'Connected' : navigator.onLine ? 'Connecting…' : 'Offline'}
-          </span>
-          <span className={`pill ${status.hasSynced ? 'ok' : 'warn'}`}>
-            {status.hasSynced ? 'Synced' : 'Syncing…'}
-          </span>
-          <button type="button" className="secondary" onClick={onOpenPos}>
-            Open POS
-          </button>
-          <button type="button" className="secondary" disabled={signingOut} onClick={() => void handleSignOut()}>
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
-        </div>
+    <div className="panel-view">
+      <header className="panel-view-header">
+        <h1>{section === 'users' ? 'Users' : section === 'inventory' ? 'Inventory' : 'Admin'}</h1>
+        <p className="muted">
+          {section === 'users'
+            ? 'Manage store staff roles and links'
+            : 'Edit stock, name, or price. Changes sync when online.'}
+        </p>
       </header>
 
       {message && (
-        <p className={message.startsWith('Updated') || message.startsWith('Added') || message.startsWith('Staff') || message.startsWith('Role')
-          ? 'success'
-          : 'error'}
+        <p
+          className={
+            message.startsWith('Updated') ||
+            message.startsWith('Added') ||
+            message.startsWith('Staff') ||
+            message.startsWith('Role')
+              ? 'success'
+              : 'error'
+          }
         >
           {message}
         </p>
       )}
 
+      {showInventory && (
       <section className="card">
-        <h2>Inventory</h2>
-        <p className="muted">Edit stock, name, or price. Changes sync when online.</p>
+        {section === 'all' && <h2>Inventory</h2>}
+        {section === 'all' && <p className="muted">Edit stock, name, or price. Changes sync when online.</p>}
 
         <div className="product-grid">
           {products.map((product) => {
@@ -432,9 +419,11 @@ export function AdminScreen({
           </div>
         </form>
       </section>
+      )}
 
+      {showUsers && (
       <section className="card">
-        <h2>Users</h2>
+        {section === 'all' && <h2>Users</h2>}
         <p className="muted">
           Create the Auth user in Supabase first (Auth → Users), copy their UUID, then link them here.
           Staff list requires network.
@@ -513,6 +502,7 @@ export function AdminScreen({
           </div>
         </form>
       </section>
+      )}
     </div>
   );
 }
