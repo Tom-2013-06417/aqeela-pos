@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
+import { productColorHex, productColorTint } from '../productColors';
 import {
   PRODUCTS_TABLE,
   SALE_LINES_TABLE,
@@ -172,7 +173,16 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
             const outOfStock = !Number.isFinite(stock) || stock <= 0;
 
             return (
-              <article key={product.id} className={`product-tile ${qty > 0 ? 'in-cart' : ''}`}>
+              <article
+                key={product.id}
+                className={`product-tile ${qty > 0 ? 'in-cart' : ''}`}
+                style={
+                  {
+                    '--product-color': productColorHex(product.color),
+                    '--product-tint': productColorTint(product.color) ?? 'var(--surface)'
+                  } as CSSProperties
+                }
+              >
                 <div className="product-tile-image" aria-hidden="true">
                   <span>{(product.name ?? '?').slice(0, 1).toUpperCase()}</span>
                 </div>

@@ -70,7 +70,7 @@
   flex: 0 0 calc((100% - 2.25rem) / 4);
   width: calc((100% - 2.25rem) / 4);
   max-width: calc((100% - 2.25rem) / 4);
-  background: var(--surface);
+  background: var(--product-tint, var(--surface));
   border: 2px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
@@ -81,7 +81,6 @@
 .product-tile.in-cart {
   border-color: #000000;
   box-shadow: none;
-  background: #ffffcc;
   outline: 2px solid #000000;
   outline-offset: -4px;
 }
@@ -91,7 +90,7 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
-  background: #dddddd;
+  background: var(--product-color, #dddddd);
   color: #000000;
   font-size: 1.75rem;
   font-weight: 700;

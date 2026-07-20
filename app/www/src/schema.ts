@@ -25,6 +25,7 @@ const products = new Table(
     unit: column.text,
     price_cents: column.integer,
     stock_qty: column.text,
+    color: column.text,
     created_at: column.text,
     updated_at: column.text
   },

@@ -3,6 +3,11 @@ import { useQuery, useStatus } from '@powersync/react';
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import {
+  PRODUCT_COLORS,
+  productColorHex,
+  type ProductColor
+} from '../productColors';
+import {
   PRODUCTS_TABLE,
   STORE_STAFF_TABLE,
   type ProductRecord
@@ -38,11 +43,13 @@ export function AdminScreen({
   const [draftStock, setDraftStock] = useState<Record<string, string>>({});
   const [draftName, setDraftName] = useState<Record<string, string>>({});
   const [draftPrice, setDraftPrice] = useState<Record<string, string>>({});
+  const [draftColor, setDraftColor] = useState<Record<string, ProductColor>>({});
 
   const [newName, setNewName] = useState('');
   const [newUnit, setNewUnit] = useState('kg');
   const [newPrice, setNewPrice] = useState('');
   const [newStock, setNewStock] = useState('0');
+  const [newColor, setNewColor] = useState<ProductColor>('red');
 
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
@@ -98,6 +105,7 @@ export function AdminScreen({
     const name = (draftName[product.id] ?? product.name ?? '').trim();
     const priceStr = draftPrice[product.id] ?? String(((product.price_cents ?? 0) / 100).toFixed(2));
     const stockStr = draftStock[product.id] ?? String(product.stock_qty ?? '0');
+    const color = draftColor[product.id] ?? (product.color as ProductColor | null) ?? 'red';
 
     const pricePesos = Number(priceStr);
     const stock = Number(stockStr);
@@ -121,9 +129,9 @@ export function AdminScreen({
       const now = new Date().toISOString();
       await db.execute(
         `UPDATE ${PRODUCTS_TABLE}
-         SET name = ?, price_cents = ?, stock_qty = ?, updated_at = ?
+         SET name = ?, price_cents = ?, stock_qty = ?, color = ?, updated_at = ?
          WHERE id = ?`,
-        [name, priceCents, stock.toFixed(3), now, product.id]
+        [name, priceCents, stock.toFixed(3), color, now, product.id]
       );
       setMessage(`Updated ${name}`);
       setDraftName((prev) => {
@@ -137,6 +145,11 @@ export function AdminScreen({
         return next;
       });
       setDraftStock((prev) => {
+        const next = { ...prev };
+        delete next[product.id];
+        return next;
+      });
+      setDraftColor((prev) => {
         const next = { ...prev };
         delete next[product.id];
         return next;
@@ -181,15 +194,16 @@ export function AdminScreen({
       const priceCents = Math.round(pricePesos * 100);
       await db.execute(
         `INSERT INTO ${PRODUCTS_TABLE}
-           (id, store_id, name, unit, price_cents, stock_qty, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, storeId, name, unit, priceCents, stock.toFixed(3), now, now]
+           (id, store_id, name, unit, price_cents, stock_qty, color, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, storeId, name, unit, priceCents, stock.toFixed(3), newColor, now, now]
       );
       setMessage(`Added ${name}`);
       setNewName('');
       setNewUnit('kg');
       setNewPrice('');
       setNewStock('0');
+      setNewColor('red');
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Add product failed');
     } finally {
@@ -325,6 +339,7 @@ export function AdminScreen({
 
         <div className="inventory-list">
           <div className="inventory-row inventory-head" aria-hidden="true">
+            <span className="inventory-color" />
             <span className="inventory-name">Name</span>
             <span className="inventory-price">Price (₱)</span>
             <span className="inventory-stock">Stock</span>
@@ -337,9 +352,34 @@ export function AdminScreen({
             const priceVal =
               draftPrice[product.id] ?? String(((product.price_cents ?? 0) / 100).toFixed(2));
             const stockVal = draftStock[product.id] ?? String(product.stock_qty ?? '0');
+            const colorVal =
+              draftColor[product.id] ?? (product.color as ProductColor | null) ?? 'red';
 
             return (
               <div key={product.id} className="inventory-row">
+                <label
+                  className="inventory-color"
+                  style={{ backgroundColor: productColorHex(colorVal) }}
+                  title={colorVal}
+                >
+                  <span className="sr-only">Color for {product.name}</span>
+                  <select
+                    aria-label={`Color for ${product.name}`}
+                    value={colorVal}
+                    onChange={(e) =>
+                      setDraftColor((prev) => ({
+                        ...prev,
+                        [product.id]: e.target.value as ProductColor
+                      }))
+                    }
+                  >
+                    {PRODUCT_COLORS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <input
                   className="inventory-name"
                   aria-label={`Name for ${product.name}`}
@@ -389,6 +429,24 @@ export function AdminScreen({
         <form className="admin-form" onSubmit={(e) => void addProduct(e)}>
           <h3>Add product</h3>
           <div className="inventory-row inventory-add">
+            <label
+              className="inventory-color"
+              style={{ backgroundColor: productColorHex(newColor) }}
+              title={newColor}
+            >
+              <span className="sr-only">New product color</span>
+              <select
+                aria-label="New product color"
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value as ProductColor)}
+              >
+                {PRODUCT_COLORS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
             <input
               className="inventory-name"
               aria-label="New product name"
