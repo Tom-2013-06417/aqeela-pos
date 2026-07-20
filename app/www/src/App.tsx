@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { PowerSyncContext, useQuery, useStatus } from '@powersync/react';
+import { AdminScreen } from './AdminScreen';
 import { SupabaseConnector } from './connector';
 import { PwaBanner } from './PwaBanner';
 import { db } from './powerSync';
@@ -11,6 +12,8 @@ import {
   STORE_STAFF_TABLE,
   type ProductRecord
 } from './schema';
+
+type AppView = 'admin' | 'pos';
 
 type RemoteDiagnostics = {
   staffCount: number;
@@ -77,10 +80,12 @@ function LoginScreen({ connector }: { connector: SupabaseConnector }) {
 
 function PosScreen({
   connector,
-  onSignOut
+  onSignOut,
+  onOpenAdmin
 }: {
   connector: SupabaseConnector;
   onSignOut: () => Promise<void>;
+  onOpenAdmin?: () => void;
 }) {
   const status = useStatus();
   const showDiagnostics = useDiagnosticsEnabled();
@@ -225,6 +230,11 @@ function PosScreen({
             {status.hasSynced ? 'Synced' : 'Syncing…'}
           </span>
           <span className="pill">{navigator.onLine ? 'Online' : 'Offline mode'}</span>
+          {onOpenAdmin && (
+            <button type="button" className="secondary" onClick={onOpenAdmin}>
+              Admin
+            </button>
+          )}
           <button type="button" className="secondary" disabled={signingOut} onClick={() => void handleSignOut()}>
             {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
@@ -342,6 +352,53 @@ function startupErrorMessage(err: unknown) {
   return message;
 }
 
+function AuthedApp({
+  connector,
+  onSignOut
+}: {
+  connector: SupabaseConnector;
+  onSignOut: () => Promise<void>;
+}) {
+  const userId = connector.currentSession?.user?.id ?? '';
+  const { data: staffRows = [], isLoading: staffLoading } = useQuery<{ role: string }>(
+    userId
+      ? `SELECT role FROM ${STORE_STAFF_TABLE} WHERE user_id = ? LIMIT 1`
+      : `SELECT role FROM ${STORE_STAFF_TABLE} WHERE 1 = 0`,
+    userId ? [userId] : []
+  );
+
+  const isAdmin = staffRows[0]?.role === 'admin';
+  const [view, setView] = useState<AppView | null>(null);
+
+  useEffect(() => {
+    if (staffLoading) return;
+    if (staffRows.length === 0) return;
+    setView((current) => current ?? (isAdmin ? 'admin' : 'pos'));
+  }, [staffLoading, staffRows.length, isAdmin]);
+
+  if (staffLoading || (staffRows.length > 0 && view === null)) {
+    return <div className="page">Loading…</div>;
+  }
+
+  if (isAdmin && view === 'admin') {
+    return (
+      <AdminScreen
+        connector={connector}
+        onSignOut={onSignOut}
+        onOpenPos={() => setView('pos')}
+      />
+    );
+  }
+
+  return (
+    <PosScreen
+      connector={connector}
+      onSignOut={onSignOut}
+      onOpenAdmin={isAdmin ? () => setView('admin') : undefined}
+    />
+  );
+}
+
 export function App() {
   const [connector] = useState(() => new SupabaseConnector());
   const [ready, setReady] = useState(false);
@@ -423,7 +480,7 @@ export function App() {
       <PwaBanner />
       <div className="page">
         {session ? (
-          <PosScreen connector={connector} onSignOut={handleSignOut} />
+          <AuthedApp connector={connector} onSignOut={handleSignOut} />
         ) : (
           <LoginScreen connector={connector} />
         )}

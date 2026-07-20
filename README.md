@@ -43,6 +43,26 @@ Or run migrations manually in SQL Editor (in order):
 4. **Auth → Users** → add a test cashier, copy the UUID
 5. Edit `supabase/scripts/link_test_user.sql` with that UUID, then run it in SQL Editor
 
+### Admin user
+
+1. **Auth → Users** → add an admin user (email/password), copy the UUID
+2. Edit `supabase/scripts/link_admin_user.sql` with that UUID, then run it in SQL Editor
+3. Apply the admin staff policies if not already pushed:
+
+```bash
+supabase db push
+```
+
+(or run `supabase/migrations/20250721000001_admin_staff_policies.sql` in the SQL Editor)
+
+4. Sign in with the admin account → **Admin** dashboard (inventory + users). Use **Open POS** for the cashier screen.
+
+**Admin can:** edit/add products and stock, list store staff, link an existing Auth user by UUID, change roles, remove staff links.
+
+**Admin cannot yet:** create Auth users from the app (create them in Supabase Auth first), manage staff while offline.
+
+To promote an existing cashier to admin, re-run `link_admin_user.sql` with their UUID (it upserts the role).
+
 ## 2. PowerSync on Railway
 
 Supabase direct DB is IPv6-only. Host PowerSync on Railway (not local Docker on Mac).
@@ -117,8 +137,11 @@ Service workers are disabled in `npm run dev` (HMR conflict). Test offline behav
 
 | Step | Expected |
 | --- | --- |
-| Login | 3 products for Rice Store A |
+| Login (cashier) | 3 products for Rice Store A |
+| Login (admin) | Admin dashboard; inventory list + staff section |
 | Sell item | Stock drops, sale in Recent sales |
+| Admin edit stock | Product stock updates locally and in Supabase when online |
+| Admin link staff | Paste Auth UUID → row appears in Users (online) |
 | Supabase tables | `sales`, `sale_lines`, `products` updated |
 | Offline sale | Works without network; uploads on reconnect |
 | Offline refresh | App shell loads from service worker cache (production build) |
