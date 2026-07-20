@@ -450,7 +450,7 @@ button:disabled {
   margin-top: auto;
   padding: 0;
   border-top: 2px solid var(--line);
-  background: var(--surface-2);
+  background: var(--surface);
 }
 
 .qty-control.compact {
@@ -694,7 +694,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0.75rem 1rem;
-  background: var(--surface-2);
+  background: var(--surface);
 }
 
 .row {
@@ -855,6 +855,69 @@ button:disabled {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* —— Modal —— */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal {
+  width: min(100%, 26rem);
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+.modal-message {
+  margin: 0;
+  padding: 1.35rem 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  border-bottom: 2px solid #000000;
+}
+
+.modal-actions {
+  display: flex;
+}
+
+.modal-cancel,
+.modal-confirm {
+  flex: 1;
+  min-height: var(--pay-height);
+  border: none;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.modal-cancel {
+  background: #ffffff;
+  color: #000000;
+  border-right: 2px solid #000000;
+}
+
+.modal-cancel:hover {
+  background: #eeeeee;
+}
+
+.modal-confirm {
+  background: #000000;
+  color: #ffffff;
+}
+
+.modal-confirm:hover:not(:disabled) {
+  background: #222222;
 }
 
 /* —— Narrow / tablet —— */

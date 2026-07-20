@@ -1,3 +1,5 @@
+import { useEffect, useId, useRef, useState } from 'react';
+
 export type AppView = 'cashier' | 'sales' | 'inventory' | 'users';
 
 type NavItem = {
@@ -105,8 +107,34 @@ export function SideNav({
   onSignOut: () => void;
 }) {
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const titleId = useId();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!confirmOpen) return;
+    cancelRef.current?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setConfirmOpen(false);
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [confirmOpen]);
+
+  function requestSignOut() {
+    if (signingOut) return;
+    setConfirmOpen(true);
+  }
+
+  function confirmSignOut() {
+    setConfirmOpen(false);
+    onSignOut();
+  }
 
   return (
+    <>
     <aside className={`side-nav ${collapsed ? 'collapsed' : ''}`}>
       <div className="side-nav-top">
         <button
@@ -153,7 +181,7 @@ export function SideNav({
           type="button"
           className="side-nav-link"
           disabled={signingOut}
-          onClick={onSignOut}
+          onClick={requestSignOut}
           title="Sign out"
         >
           <IconSignOut />
@@ -161,5 +189,44 @@ export function SideNav({
         </button>
       </div>
     </aside>
+
+    {confirmOpen && (
+      <div
+        className="modal-backdrop"
+        role="presentation"
+        onClick={() => setConfirmOpen(false)}
+      >
+        <div
+          className="modal"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p id={titleId} className="modal-message">
+            Are you sure you want to log out?
+          </p>
+          <div className="modal-actions">
+            <button
+              ref={cancelRef}
+              type="button"
+              className="modal-cancel"
+              onClick={() => setConfirmOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="modal-confirm"
+              disabled={signingOut}
+              onClick={confirmSignOut}
+            >
+              Log out
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
