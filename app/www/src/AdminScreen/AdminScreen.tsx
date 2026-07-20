@@ -319,7 +319,7 @@ export function AdminScreen({
       )}
 
       {showInventory && (
-      <section className="card inventory-section">
+      <section className="inventory-section">
         {section === 'all' && <h2>Inventory</h2>}
         {section === 'all' && <p className="muted">Edit stock, name, or price. Changes sync when online.</p>}
 

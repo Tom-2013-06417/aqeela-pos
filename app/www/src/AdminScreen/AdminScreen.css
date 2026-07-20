@@ -21,6 +21,10 @@
   background: var(--surface);
 }
 
+.inventory-section {
+  margin-bottom: 1rem;
+}
+
 .inventory-section h2 {
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
