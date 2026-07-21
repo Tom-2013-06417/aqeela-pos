@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import './SideNav.css';
 
-export type AppView = 'cashier' | 'sales' | 'inventory' | 'users';
+export type AppView = 'cashier' | 'sales' | 'inventory' | 'categories' | 'users';
 
 type NavItem = {
   id: AppView;
@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'cashier', label: 'Cashier' },
   { id: 'sales', label: 'Sales' },
   { id: 'inventory', label: 'Inventory', adminOnly: true },
+  { id: 'categories', label: 'Categories', adminOnly: true },
   { id: 'users', label: 'Users', adminOnly: true }
 ];
 
@@ -44,6 +45,18 @@ function IconInventory() {
       <path d="M4 8l8-4 8 4-8 4-8-4z" />
       <path d="M4 12l8 4 8-4" />
       <path d="M4 16l8 4 8-4" />
+    </svg>
+  );
+}
+
+function IconCategories() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M4 6h16" />
+      <path d="M4 12h10" />
+      <path d="M4 18h13" />
+      <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="19.5" cy="18" r="1.5" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -81,6 +94,7 @@ const ICONS: Record<AppView, () => React.ReactNode> = {
   cashier: IconCashier,
   sales: IconSales,
   inventory: IconInventory,
+  categories: IconCategories,
   users: IconUsers
 };
 

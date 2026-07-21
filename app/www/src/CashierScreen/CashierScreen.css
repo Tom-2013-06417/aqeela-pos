@@ -125,6 +125,61 @@
   font-size: 0.8rem;
 }
 
+.product-tile-per {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.rice-qty {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: auto;
+  border-top: 2px solid var(--line);
+  background: var(--surface);
+}
+
+.rice-qty.compact {
+  margin-top: 0.35rem;
+  border: 2px solid var(--line);
+}
+
+.rice-presets {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--line);
+}
+
+.rice-preset {
+  flex: 1;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.2rem;
+  border: none;
+  border-right: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.rice-preset:last-child {
+  border-right: none;
+}
+
+.rice-preset:hover:not(:disabled) {
+  background: #000000;
+  color: #ffffff;
+}
+
+.rice-preset:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .qty-control {
   display: flex;
   align-items: center;
@@ -135,12 +190,22 @@
   background: var(--surface);
 }
 
+.rice-qty .qty-control {
+  margin-top: 0;
+  border-top: none;
+}
+
 .qty-control.compact {
   margin: 0;
   padding: 0;
   border: 2px solid var(--line);
   background: var(--surface);
   --qty-touch: 2.75rem;
+}
+
+.rice-qty.compact .qty-control.compact {
+  border: none;
+  border-top: 2px solid var(--line);
 }
 
 .qty-btn {
@@ -179,9 +244,53 @@
   padding: 0.35rem 0;
 }
 
+.qty-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  background: #ffffff;
+  height: var(--qty-touch);
+}
+
+.qty-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 0 0.15rem;
+  appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.qty-unit {
+  flex: 0 0 auto;
+  padding-right: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .qty-control.compact .qty-value {
   flex: 0 0 2.25rem;
   font-size: 1.1rem;
+}
+
+.qty-control.compact .qty-input {
+  font-size: 0.95rem;
 }
 
 .cashier-empty {

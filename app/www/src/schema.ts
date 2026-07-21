@@ -2,6 +2,7 @@ import { column, Schema, Table } from '@powersync/web';
 
 export const STORES_TABLE = 'stores';
 export const STORE_STAFF_TABLE = 'store_staff';
+export const CATEGORIES_TABLE = 'categories';
 export const PRODUCTS_TABLE = 'products';
 export const SALES_TABLE = 'sales';
 export const SALE_LINES_TABLE = 'sale_lines';
@@ -18,6 +19,17 @@ const storeStaff = new Table({
   created_at: column.text
 }, { indexes: { user: ['user_id'], store: ['store_id'] } });
 
+const categories = new Table(
+  {
+    store_id: column.text,
+    name: column.text,
+    slug: column.text,
+    created_at: column.text,
+    updated_at: column.text
+  },
+  { indexes: { store: ['store_id'] } }
+);
+
 const products = new Table(
   {
     store_id: column.text,
@@ -26,10 +38,12 @@ const products = new Table(
     price_cents: column.integer,
     stock_qty: column.text,
     color: column.text,
+    category_id: column.text,
+    kg_per_sack: column.text,
     created_at: column.text,
     updated_at: column.text
   },
-  { indexes: { store: ['store_id'] } }
+  { indexes: { store: ['store_id'], category: ['category_id'] } }
 );
 
 const sales = new Table(
@@ -57,11 +71,19 @@ const saleLines = new Table(
 export const AppSchema = new Schema({
   stores,
   store_staff: storeStaff,
+  categories,
   products,
   sales,
   sale_lines: saleLines
 });
 
 export type Database = (typeof AppSchema)['types'];
+export type CategoryRecord = Database['categories'];
 export type ProductRecord = Database['products'];
 export type SaleRecord = Database['sales'];
+
+export const RICE_CATEGORY_SLUG = 'rice';
+
+export function isRiceCategory(category: { slug?: string | null } | null | undefined) {
+  return category?.slug === RICE_CATEGORY_SLUG;
+}

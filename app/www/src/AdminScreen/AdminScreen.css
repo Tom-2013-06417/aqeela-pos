@@ -100,6 +100,19 @@
   font-family: var(--font-mono);
 }
 
+.inventory-category {
+  flex: 0 0 8.5rem;
+  appearance: none;
+  cursor: pointer;
+}
+
+.inventory-sack {
+  flex: 0 0 6.5rem;
+  font-family: var(--font-mono);
+  justify-content: center;
+  text-align: center;
+}
+
 .inventory-unit {
   flex: 0 0 4.5rem;
   justify-content: center;
@@ -137,6 +150,28 @@
 
 .inventory-action:hover:not(:disabled) {
   background: #222222;
+}
+
+.inventory-action-secondary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.inventory-action-secondary:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.inventory-action-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.category-row .inventory-name {
+  flex: 1 1 auto;
+}
+
+.category-row .inventory-unit {
+  flex: 0 0 5.5rem;
 }
 
 .inventory-head {

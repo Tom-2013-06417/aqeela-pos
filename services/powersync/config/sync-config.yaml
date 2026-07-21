@@ -12,6 +12,9 @@ streams:
       - SELECT products.* FROM products
         INNER JOIN store_staff ON store_staff.store_id = products.store_id
         WHERE store_staff.user_id = auth.user_id()
+      - SELECT categories.* FROM categories
+        INNER JOIN store_staff ON store_staff.store_id = categories.store_id
+        WHERE store_staff.user_id = auth.user_id()
       - SELECT sales.* FROM sales
         INNER JOIN store_staff ON store_staff.store_id = sales.store_id
         WHERE store_staff.user_id = auth.user_id()

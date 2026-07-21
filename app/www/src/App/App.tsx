@@ -148,7 +148,7 @@ function AuthedApp({
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin && (view === 'inventory' || view === 'users')) {
+    if (!isAdmin && (view === 'inventory' || view === 'categories' || view === 'users')) {
       setView('cashier');
     }
   }, [isAdmin, view]);
@@ -185,6 +185,7 @@ function AuthedApp({
         {view === 'cashier' && <CashierScreen connector={connector} />}
         {view === 'sales' && <SalesScreen />}
         {view === 'inventory' && isAdmin && <AdminScreen connector={connector} section="inventory" />}
+        {view === 'categories' && isAdmin && <AdminScreen connector={connector} section="categories" />}
         {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}
         {showDiagnostics && <DiagnosticsPanel connector={connector} userId={userId} />}
       </main>
