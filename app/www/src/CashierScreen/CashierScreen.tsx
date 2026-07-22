@@ -42,6 +42,8 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [draftQtyInput, setDraftQtyInput] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashInput, setCashInput] = useState('');
 
   const { data: products = [], isLoading: productsLoading } = useQuery<ProductRecord>(
     `SELECT * FROM ${PRODUCTS_TABLE} ORDER BY name ASC`
@@ -216,6 +218,28 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     }
   }
 
+  function openCashModal() {
+    if (cartLines.length === 0) {
+      setMessage('Add items to the order first');
+      return;
+    }
+    setMessage(null);
+    setCashInput('');
+    setShowCashModal(true);
+  }
+
+  function closeCashModal() {
+    setShowCashModal(false);
+    setCashInput('');
+  }
+
+  async function confirmCashPayment() {
+    if (!cashSufficient) return;
+    setShowCashModal(false);
+    setCashInput('');
+    await placeOrder('cash');
+  }
+
   function renderPieceQty(product: ProductRecord, qty: number, compact = false) {
     const stock = Number(product.stock_qty);
     const outOfStock = !Number.isFinite(stock) || stock <= 0;
@@ -343,6 +367,16 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     );
   }
 
+  const tenderedCents = (() => {
+    const trimmed = cashInput.trim();
+    if (trimmed === '') return null;
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return Math.round(n * 100);
+  })();
+  const cashSufficient = tenderedCents !== null && tenderedCents >= totalCents;
+  const changeCents = tenderedCents !== null ? Math.max(0, tenderedCents - totalCents) : 0;
+
   return (
     <div className="cashier">
       <section className="cashier-catalog" aria-label="Products">
@@ -455,7 +489,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
             <strong>{formatMoney(totalCents)}</strong>
           </div>
           <div className="cashier-pay-actions">
-            <button type="button" className="pay-cash" disabled={busy || cartLines.length === 0} onClick={() => void placeOrder('cash')}>
+            <button type="button" className="pay-cash" disabled={busy || cartLines.length === 0} onClick={openCashModal}>
               Cash
             </button>
             <button type="button" className="pay-gcash" disabled={busy || cartLines.length === 0} onClick={() => void placeOrder('gcash')}>
@@ -464,6 +498,83 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           </div>
         </footer>
       </aside>
+
+      {showCashModal && (
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onClick={closeCashModal}
+        >
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cash-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="cash-modal-title" className="modal-title">
+              Cash payment
+            </h2>
+
+            <div className="cash-row">
+              <span>Total due</span>
+              <strong className="cash-amount">{formatMoney(totalCents)}</strong>
+            </div>
+
+            <label className="cash-field">
+              <span>Cash received</span>
+              <div className="cash-input-wrap">
+                <span className="cash-input-currency" aria-hidden="true">
+                  ₱
+                </span>
+                <input
+                  className="cash-input"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  autoFocus
+                  value={cashInput}
+                  onChange={(e) => setCashInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && cashSufficient && !busy) {
+                      void confirmCashPayment();
+                    }
+                  }}
+                />
+              </div>
+            </label>
+
+            <div className="cash-row cash-change">
+              <span>Change</span>
+              <strong className="cash-amount">
+                {cashSufficient ? formatMoney(changeCents) : '—'}
+              </strong>
+            </div>
+
+            {tenderedCents !== null && !cashSufficient && (
+              <p className="cash-warn" role="alert">
+                Cash received must be at least {formatMoney(totalCents)}.
+              </p>
+            )}
+
+            <div className="cash-actions">
+              <button type="button" className="cash-cancel" onClick={closeCashModal}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cash-confirm"
+                disabled={!cashSufficient || busy}
+                onClick={() => void confirmCashPayment()}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
