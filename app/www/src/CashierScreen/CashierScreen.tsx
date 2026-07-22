@@ -1,5 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
+import { CashPaymentModal } from '../CashPaymentModal/CashPaymentModal';
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
@@ -43,7 +44,6 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
-  const [cashInput, setCashInput] = useState('');
 
   const { data: products = [], isLoading: productsLoading } = useQuery<ProductRecord>(
     `SELECT * FROM ${PRODUCTS_TABLE} ORDER BY name ASC`
@@ -224,19 +224,11 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
       return;
     }
     setMessage(null);
-    setCashInput('');
     setShowCashModal(true);
   }
 
-  function closeCashModal() {
-    setShowCashModal(false);
-    setCashInput('');
-  }
-
   async function confirmCashPayment() {
-    if (!cashSufficient) return;
     setShowCashModal(false);
-    setCashInput('');
     await placeOrder('cash');
   }
 
@@ -367,16 +359,6 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     );
   }
 
-  const tenderedCents = (() => {
-    const trimmed = cashInput.trim();
-    if (trimmed === '') return null;
-    const n = Number(trimmed);
-    if (!Number.isFinite(n) || n < 0) return null;
-    return Math.round(n * 100);
-  })();
-  const cashSufficient = tenderedCents !== null && tenderedCents >= totalCents;
-  const changeCents = tenderedCents !== null ? Math.max(0, tenderedCents - totalCents) : 0;
-
   return (
     <div className="cashier">
       <section className="cashier-catalog" aria-label="Products">
@@ -500,80 +482,12 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
       </aside>
 
       {showCashModal && (
-        <div
-          className="modal-overlay"
-          role="presentation"
-          onClick={closeCashModal}
-        >
-          <div
-            className="modal-card"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cash-modal-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="cash-modal-title" className="modal-title">
-              Cash payment
-            </h2>
-
-            <div className="cash-row">
-              <span>Total due</span>
-              <strong className="cash-amount">{formatMoney(totalCents)}</strong>
-            </div>
-
-            <label className="cash-field">
-              <span>Cash received</span>
-              <div className="cash-input-wrap">
-                <span className="cash-input-currency" aria-hidden="true">
-                  ₱
-                </span>
-                <input
-                  className="cash-input"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  autoFocus
-                  value={cashInput}
-                  onChange={(e) => setCashInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && cashSufficient && !busy) {
-                      void confirmCashPayment();
-                    }
-                  }}
-                />
-              </div>
-            </label>
-
-            <div className="cash-row cash-change">
-              <span>Change</span>
-              <strong className="cash-amount">
-                {cashSufficient ? formatMoney(changeCents) : '—'}
-              </strong>
-            </div>
-
-            {tenderedCents !== null && !cashSufficient && (
-              <p className="cash-warn" role="alert">
-                Cash received must be at least {formatMoney(totalCents)}.
-              </p>
-            )}
-
-            <div className="cash-actions">
-              <button type="button" className="cash-cancel" onClick={closeCashModal}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="cash-confirm"
-                disabled={!cashSufficient || busy}
-                onClick={() => void confirmCashPayment()}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
+        <CashPaymentModal
+          totalCents={totalCents}
+          busy={busy}
+          onCancel={() => setShowCashModal(false)}
+          onConfirm={() => void confirmCashPayment()}
+        />
       )}
     </div>
   );
