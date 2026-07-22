@@ -143,6 +143,7 @@
 .rice-qty.compact {
   margin-top: 0.35rem;
   border: 2px solid var(--line);
+  --qty-touch: 2.75rem;
 }
 
 .rice-presets {
@@ -153,7 +154,7 @@
 
 .rice-preset {
   flex: 1;
-  min-height: 2.25rem;
+  min-height: var(--qty-touch);
   padding: 0.25rem 0.2rem;
   border: none;
   border-right: 2px solid var(--line);
