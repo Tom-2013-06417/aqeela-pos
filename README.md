@@ -84,6 +84,24 @@ railway up --service powersync
 
 Railway needs **two services**: Postgres (bucket storage) + powersync (Dockerfile). `railway add --database postgres` links your shell to Postgres — always deploy with `--service powersync`.
 
+### Common deploy pitfall (monorepo root)
+
+If Railway logs show `Package-lock.json detected, assuming npm` and `No start command detected`,
+it is deploying the repo root instead of `services/powersync`.
+
+Use:
+
+```bash
+cd services/powersync
+railway up --service powersync
+```
+
+And in the Railway UI for the `powersync` service confirm:
+- **Root Directory** = `services/powersync`
+- **Builder** = Dockerfile
+
+This service includes `services/powersync/railway.toml` and `Dockerfile`; it should not be built as a Node app.
+
 On the **powersync** service:
 
 | Variable | Value |

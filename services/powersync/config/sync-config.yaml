@@ -10,19 +10,14 @@ streams:
         INNER JOIN store_staff ON store_staff.store_id = stores.id
         WHERE store_staff.user_id = auth.user_id()
       - SELECT products.* FROM products
-        WHERE EXISTS (
-          SELECT 1 FROM inventory_levels
-          INNER JOIN store_staff ON store_staff.store_id = inventory_levels.store_id
-          WHERE inventory_levels.product_id = products.id
-            AND store_staff.user_id = auth.user_id()
-        )
+        INNER JOIN inventory_levels ON inventory_levels.product_id = products.id
+        INNER JOIN store_staff ON store_staff.store_id = inventory_levels.store_id
+        WHERE store_staff.user_id = auth.user_id()
       - SELECT inventory_levels.* FROM inventory_levels
         INNER JOIN store_staff ON store_staff.store_id = inventory_levels.store_id
         WHERE store_staff.user_id = auth.user_id()
       - SELECT categories.* FROM categories
-        WHERE EXISTS (
-          SELECT 1 FROM store_staff WHERE store_staff.user_id = auth.user_id()
-        )
+        INNER JOIN store_staff ON store_staff.user_id = auth.user_id()
       - SELECT sales.* FROM sales
         INNER JOIN store_staff ON store_staff.store_id = sales.store_id
         WHERE store_staff.user_id = auth.user_id()
