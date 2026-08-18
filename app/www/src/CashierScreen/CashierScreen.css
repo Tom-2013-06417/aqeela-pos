@@ -79,10 +79,8 @@
 }
 
 .product-tile.in-cart {
-  border-color: #000000;
-  box-shadow: none;
-  outline: 1px solid #000000;
-  outline-offset: -4px;
+  border-color: #ffcc00;
+  border-width: 4px;
 }
 
 .product-tile-image {
