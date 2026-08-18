@@ -130,6 +130,16 @@ export function AdminScreen({
     return isRiceCategory(categoriesById.get(newCategoryId));
   }, [newCategoryId, categoriesById]);
 
+  const showKgPerSackColumn = useMemo(() => {
+    if (newCategoryIsRice) return true;
+    return products.some((product) => {
+      const categoryId = Object.prototype.hasOwnProperty.call(draftCategory, product.id)
+        ? draftCategory[product.id]
+        : (product.category_id ?? '');
+      return isRiceCategory(categoryId ? categoriesById.get(categoryId) : undefined);
+    });
+  }, [newCategoryIsRice, products, draftCategory, categoriesById]);
+
   const loadStaff = useCallback(async () => {
     if (!staffStoreId) return;
     if (!navigator.onLine) {
@@ -744,7 +754,7 @@ export function AdminScreen({
                 </span>
               ))}
               <span className="inventory-unit">Unit</span>
-              <span className="inventory-sack">Kg/sack</span>
+              {showKgPerSackColumn && <span className="inventory-sack">Kg/sack</span>}
               <span className="inventory-action" />
             </div>
 
@@ -835,22 +845,23 @@ export function AdminScreen({
                   <span className="inventory-unit" title={rice ? 'kg' : (product.unit ?? '')}>
                     {rice ? 'kg' : product.unit}
                   </span>
-                  {rice ? (
-                    <input
-                      className="inventory-sack"
-                      aria-label={`Kg per sack for ${product.name}`}
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      placeholder="—"
-                      value={kgPerSackVal}
-                      onChange={(e) =>
-                        setDraftKgPerSack((prev) => ({ ...prev, [product.id]: e.target.value }))
-                      }
-                    />
-                  ) : (
-                    <span className="inventory-sack muted">—</span>
-                  )}
+                  {showKgPerSackColumn &&
+                    (rice ? (
+                      <input
+                        className="inventory-sack"
+                        aria-label={`Kg per sack for ${product.name}`}
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        placeholder="—"
+                        value={kgPerSackVal}
+                        onChange={(e) =>
+                          setDraftKgPerSack((prev) => ({ ...prev, [product.id]: e.target.value }))
+                        }
+                      />
+                    ) : (
+                      <span className="inventory-sack" />
+                    ))}
                   <button
                     type="button"
                     className="inventory-action"
@@ -950,20 +961,21 @@ export function AdminScreen({
                   required
                 />
               )}
-              {newCategoryIsRice ? (
-                <input
-                  className="inventory-sack"
-                  aria-label="New product kg per sack"
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  placeholder="Kg/sack"
-                  value={newKgPerSack}
-                  onChange={(e) => setNewKgPerSack(e.target.value)}
-                />
-              ) : (
-                <span className="inventory-sack muted">—</span>
-              )}
+              {showKgPerSackColumn &&
+                (newCategoryIsRice ? (
+                  <input
+                    className="inventory-sack"
+                    aria-label="New product kg per sack"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    placeholder="Kg/sack"
+                    value={newKgPerSack}
+                    onChange={(e) => setNewKgPerSack(e.target.value)}
+                  />
+                ) : (
+                  <span className="inventory-sack" />
+                ))}
               <button type="submit" className="inventory-action" disabled={busy || !hasStore}>
                 Add
               </button>
