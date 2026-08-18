@@ -37,10 +37,6 @@ type StaffRow = {
 
 type StaffRole = 'cashier' | 'admin';
 
-function shortId(id: string) {
-  return id.length > 12 ? `${id.slice(0, 8)}…` : id;
-}
-
 function categoryByIdMap(categories: CategoryRecord[]) {
   const map = new Map<string, CategoryRecord>();
   for (const c of categories) map.set(c.id, c);

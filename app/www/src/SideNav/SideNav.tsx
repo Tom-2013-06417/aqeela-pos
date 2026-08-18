@@ -7,10 +7,11 @@ type NavItem = {
   id: AppView;
   label: string;
   adminOnly?: boolean;
+  cashierOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'cashier', label: 'Cashier' },
+  { id: 'cashier', label: 'Cashier', cashierOnly: true },
   { id: 'sales', label: 'Sales' },
   { id: 'inventory', label: 'Inventory', adminOnly: true },
   { id: 'categories', label: 'Categories', adminOnly: true },
@@ -121,7 +122,11 @@ export function SideNav({
   onToggle: () => void;
   onSignOut: () => void;
 }) {
-  const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+  const items = NAV_ITEMS.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.cashierOnly && isAdmin) return false;
+    return true;
+  });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const titleId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);

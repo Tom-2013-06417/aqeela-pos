@@ -143,13 +143,17 @@ function AuthedApp({
   );
 
   const isAdmin = staffRows.some((row) => row.role === 'admin');
-  const [view, setView] = useState<AppView>('cashier');
+  const [view, setView] = useState<AppView>('sales');
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!isAdmin && (view === 'inventory' || view === 'categories' || view === 'users')) {
       setView('cashier');
+      return;
+    }
+    if (isAdmin && view === 'cashier') {
+      setView('sales');
     }
   }, [isAdmin, view]);
 
