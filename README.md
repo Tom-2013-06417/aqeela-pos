@@ -13,9 +13,9 @@ pos/
 
 Env files live next to the code that uses them:
 
-| File | Package |
-| --- | --- |
-| `app/www/.env.local` | Vite (`VITE_*`) |
+| File                      | Package                      |
+| ------------------------- | ---------------------------- |
+| `app/www/.env.local`      | Vite (`VITE_*`)              |
 | `services/powersync/.env` | Railway / PowerSync (`PS_*`) |
 
 ## Setup
@@ -97,6 +97,7 @@ railway up --service powersync
 ```
 
 And in the Railway UI for the `powersync` service confirm:
+
 - **Root Directory** = `services/powersync`
 - **Builder** = Dockerfile
 
@@ -104,12 +105,12 @@ This service includes `services/powersync/railway.toml` and `Dockerfile`; it sho
 
 On the **powersync** service:
 
-| Variable | Value |
-| --- | --- |
-| `PS_DATA_SOURCE_URI` | `postgresql://powersync_role:<password>@db.<ref>.supabase.co:5432/postgres?sslmode=verify-full` |
-| `PS_JWKS_URI` | `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` |
-| `PS_STORAGE_SOURCE_URI` | `${{Postgres.DATABASE_URL}}` |
-| `PS_PORT` | `8080` |
+| Variable                | Value                                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| `PS_DATA_SOURCE_URI`    | `postgresql://powersync_role:<password>@db.<ref>.supabase.co:5432/postgres?sslmode=verify-full` |
+| `PS_JWKS_URI`           | `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`                                       |
+| `PS_STORAGE_SOURCE_URI` | `${{Postgres.DATABASE_URL}}`                                                                    |
+| `PS_PORT`               | `8080`                                                                                          |
 
 See `services/powersync/.env.example` for a local reference copy.
 
@@ -145,27 +146,27 @@ Open `https://localhost:4173` (accept the self-signed cert), sign in once, then 
 
 On a tablet, use **Add to Home Screen** for a standalone kiosk-style launch.
 
-| Step | Expected |
-| --- | --- |
-| First visit online | Service worker installs; "App is ready for offline use" banner |
-| Refresh while offline | App shell loads from cache |
-| Close tab, reopen offline | Login session + POS work if previously signed in |
-| New deploy | "A new version is available" banner; refresh when idle |
+| Step                      | Expected                                                       |
+| ------------------------- | -------------------------------------------------------------- |
+| First visit online        | Service worker installs; "App is ready for offline use" banner |
+| Refresh while offline     | App shell loads from cache                                     |
+| Close tab, reopen offline | Login session + POS work if previously signed in               |
+| New deploy                | "A new version is available" banner; refresh when idle         |
 
 Service workers are disabled in `npm run dev` (HMR conflict). Test offline behavior with `build` + `preview`, or a deployed HTTPS host.
 
 ## 4. Verify
 
-| Step | Expected |
-| --- | --- |
-| Login (cashier) | Products carried at that cashier's location |
-| Login (admin) | Admin dashboard; catalog + stock per location + staff + payment methods |
-| Sell item | Stock drops, sale in Recent sales |
-| Admin edit stock | Product stock updates locally and in Supabase when online |
-| Admin link staff | Paste Auth UUID → row appears in Users (online) |
-| Supabase tables | `sales`, `sale_lines`, `products` updated |
-| Offline sale | Works without network; uploads on reconnect |
-| Offline refresh | App shell loads from service worker cache (production build) |
+| Step             | Expected                                                                |
+| ---------------- | ----------------------------------------------------------------------- |
+| Login (cashier)  | Products carried at that cashier's location                             |
+| Login (admin)    | Admin dashboard; catalog + stock per location + staff + payment methods |
+| Sell item        | Stock drops, sale in Recent sales                                       |
+| Admin edit stock | Product stock updates locally and in Supabase when online               |
+| Admin link staff | Paste Auth UUID → row appears in Users (online)                         |
+| Supabase tables  | `sales`, `sale_lines`, `products` updated                               |
+| Offline sale     | Works without network; uploads on reconnect                             |
+| Offline refresh  | App shell loads from service worker cache (production build)            |
 
 ## Troubleshooting
 
@@ -185,6 +186,6 @@ from pg_replication_slots
 where active = false and slot_name like 'powersync%';
 ```
 
-**Tablet stuck on "Loading…"** — PowerSync needs `navigator.locks`, which browsers only expose in a *secure context*. `http://localhost` counts, but `http://192.168.x.x` does not. Run `npm run dev`, then on the tablet open `https://<your-computer-ip>:5173` (note **https**), and accept the self-signed certificate warning. The dev server enables HTTPS automatically via `@vitejs/plugin-basic-ssl`.
+**Tablet stuck on "Loading…"** — PowerSync needs `navigator.locks`, which browsers only expose in a _secure context_. `http://localhost` counts, but `http://192.168.x.x` does not. Run `npm run dev`, then on the tablet open `https://<your-computer-ip>:5173` (note **https**), and accept the self-signed certificate warning. The dev server enables HTTPS automatically via `@vitejs/plugin-basic-ssl`.
 
 **Remote debugging without tablet DevTools** — iPad: enable **Settings → Safari → Advanced → Web Inspector**, connect the tablet to a Mac, then use **Safari → Develop → [your iPad]**. Android Chrome: open `chrome://inspect` on your desktop while the tablet is on USB debugging.
