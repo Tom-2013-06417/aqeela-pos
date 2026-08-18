@@ -137,12 +137,12 @@ function AuthedApp({
   const userId = connector.currentSession?.user?.id ?? '';
   const { data: staffRows = [], isLoading: staffLoading } = useQuery<{ role: string }>(
     userId
-      ? `SELECT role FROM ${STORE_STAFF_TABLE} WHERE user_id = ? LIMIT 1`
+      ? `SELECT role FROM ${STORE_STAFF_TABLE} WHERE user_id = ?`
       : `SELECT role FROM ${STORE_STAFF_TABLE} WHERE 1 = 0`,
     userId ? [userId] : []
   );
 
-  const isAdmin = staffRows[0]?.role === 'admin';
+  const isAdmin = staffRows.some((row) => row.role === 'admin');
   const [view, setView] = useState<AppView>('cashier');
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [signingOut, setSigningOut] = useState(false);

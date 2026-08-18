@@ -37,11 +37,12 @@ supabase db push
 
 Or run migrations manually in SQL Editor (in order):
 
-- `supabase/migrations/20250714000001_pos_schema.sql`
-- `supabase/migrations/20250714000002_powersync_setup.sql` (set `powersync_role` password first)
+- `supabase/migrations/` (all files, oldest first)
 
 4. **Auth → Users** → add a test cashier, copy the UUID
 5. Edit `supabase/scripts/link_test_user.sql` with that UUID, then run it in SQL Editor
+
+For the Dilettante bazaar (two booths, Paymongo QR only), create 3 Auth users then edit and run `supabase/scripts/setup_dilettante_bazaar.sql`.
 
 ### Admin user
 
@@ -57,9 +58,11 @@ supabase db push
 
 4. Sign in with the admin account → **Admin** dashboard (inventory + users). Use **Open POS** for the cashier screen.
 
-**Admin can:** edit/add products and stock, list store staff, link an existing Auth user by UUID, change roles, remove staff links.
+**Admin can:** edit/add catalog products and per-location stock, toggle payment methods per location, list store staff, link an existing Auth user by UUID, change roles, remove staff links.
 
 **Admin cannot yet:** create Auth users from the app (create them in Supabase Auth first), manage staff while offline.
+
+After the catalog/inventory migration, clear IndexedDB (`pos.db`) and sign in again so PowerSync picks up the new tables.
 
 To promote an existing cashier to admin, re-run `link_admin_user.sql` with their UUID (it upserts the role).
 
@@ -137,8 +140,8 @@ Service workers are disabled in `npm run dev` (HMR conflict). Test offline behav
 
 | Step | Expected |
 | --- | --- |
-| Login (cashier) | 3 products for Rice Store A |
-| Login (admin) | Admin dashboard; inventory list + staff section |
+| Login (cashier) | Products carried at that cashier's location |
+| Login (admin) | Admin dashboard; catalog + stock per location + staff + payment methods |
 | Sell item | Stock drops, sale in Recent sales |
 | Admin edit stock | Product stock updates locally and in Supabase when online |
 | Admin link staff | Paste Auth UUID → row appears in Users (online) |

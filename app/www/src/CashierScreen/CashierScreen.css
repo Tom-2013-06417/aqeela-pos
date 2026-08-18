@@ -407,17 +407,18 @@
 
 .cashier-pay-actions {
   display: flex;
-  gap: 0;
+  gap: 0.4rem;
 }
 
 .pay-cash,
-.pay-gcash {
+.pay-gcash,
+.pay-paymongo {
   flex: 1;
   min-height: var(--pay-height);
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 
 .pay-cash {
@@ -430,16 +431,24 @@
   background: #0033cc;
   color: #ffffff;
   border: 2px solid #000000;
-  border-left: none;
 }
 
-.pay-cash:hover:not(:disabled),
-.pay-gcash:hover:not(:disabled) {
+.pay-paymongo {
+  background: #00665c;
+  color: #ffffff;
+  border: 2px solid #000000;
+}
+
+.pay-cash:hover:not(:disabled) {
   background: #222222;
 }
 
 .pay-gcash:hover:not(:disabled) {
   background: #002299;
+}
+
+.pay-paymongo:hover:not(:disabled) {
+  background: #004f47;
 }
 
 @media (max-width: 700px) {

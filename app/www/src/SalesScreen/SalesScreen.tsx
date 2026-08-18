@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { SALES_TABLE } from '../schema';
+import { SALES_TABLE, paymentMethodLabel } from '../schema';
 import '../styles/panel-view.css';
 import './SalesScreen.css';
 
@@ -29,7 +29,7 @@ export function SalesScreen() {
           {sales.map((sale) => (
             <li key={sale.id}>
               <span>{formatMoney(sale.total_cents)}</span>
-              <span className="muted">{sale.payment_method}</span>
+              <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
               <span className="muted">{new Date(sale.created_at).toLocaleString()}</span>
             </li>
           ))}

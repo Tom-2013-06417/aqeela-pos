@@ -6,12 +6,17 @@ import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
 import {
   CATEGORIES_TABLE,
+  INVENTORY_LEVELS_TABLE,
   PRODUCTS_TABLE,
   SALE_LINES_TABLE,
   SALES_TABLE,
+  STORES_TABLE,
   STORE_STAFF_TABLE,
   isRiceCategory,
+  parsePaymentMethods,
+  paymentMethodLabel,
   type CategoryRecord,
+  type PaymentMethod,
   type ProductRecord
 } from '../schema';
 import './CashierScreen.css';
@@ -31,10 +36,17 @@ function roundQty(n: number) {
   return Math.round(n * 1000) / 1000;
 }
 
+type CatalogProduct = ProductRecord & {
+  stock_qty: string;
+  inventory_level_id: string;
+};
+
 type CartLine = {
-  product: ProductRecord;
+  product: CatalogProduct;
   qty: number;
 };
+
+const PAYMENT_METHOD_BUTTONS: PaymentMethod[] = ['cash', 'gcash', 'paymongo_qr'];
 
 export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const status = useStatus();
@@ -45,8 +57,42 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [busy, setBusy] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<ProductRecord>(
-    `SELECT * FROM ${PRODUCTS_TABLE} ORDER BY name ASC`
+  const userId = connector.currentSession?.user?.id ?? '';
+
+  const { data: staffRows = [] } = useQuery<{ store_id: string }>(
+    userId
+      ? `SELECT store_id FROM ${STORE_STAFF_TABLE} WHERE user_id = ? LIMIT 1`
+      : `SELECT store_id FROM ${STORE_STAFF_TABLE} WHERE 1 = 0`,
+    userId ? [userId] : []
+  );
+  const storeId = staffRows[0]?.store_id ?? '';
+
+  const { data: storeRows = [] } = useQuery<{ name: string; payment_methods: string | null }>(
+    storeId
+      ? `SELECT name, payment_methods FROM ${STORES_TABLE} WHERE id = ?`
+      : `SELECT name, payment_methods FROM ${STORES_TABLE} WHERE 1 = 0`,
+    storeId ? [storeId] : []
+  );
+  const storeName = storeRows[0]?.name ?? '';
+  const paymentToggles = useMemo(
+    () => parsePaymentMethods(storeRows[0]?.payment_methods),
+    [storeRows]
+  );
+
+  const { data: products = [], isLoading: productsLoading } = useQuery<CatalogProduct>(
+    storeId
+      ? `SELECT p.id, p.name, p.unit, p.price_cents, p.color, p.category_id, p.kg_per_sack,
+                il.qty as stock_qty, il.id as inventory_level_id
+         FROM ${PRODUCTS_TABLE} p
+         INNER JOIN ${INVENTORY_LEVELS_TABLE} il ON il.product_id = p.id
+         WHERE il.store_id = ?
+         ORDER BY p.name ASC`
+      : `SELECT p.id, p.name, p.unit, p.price_cents, p.color, p.category_id, p.kg_per_sack,
+                il.qty as stock_qty, il.id as inventory_level_id
+         FROM ${PRODUCTS_TABLE} p
+         INNER JOIN ${INVENTORY_LEVELS_TABLE} il ON il.product_id = p.id
+         WHERE 1 = 0`,
+    storeId ? [storeId] : []
   );
 
   const { data: categories = [] } = useQuery<CategoryRecord>(
@@ -60,7 +106,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   }, [categories]);
 
   const productById = useMemo(() => {
-    const map = new Map<string, ProductRecord>();
+    const map = new Map<string, CatalogProduct>();
     for (const p of products) map.set(p.id, p);
     return map;
   }, [products]);
@@ -87,18 +133,20 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     0
   );
 
+  const enabledMethods = PAYMENT_METHOD_BUTTONS.filter((method) => paymentToggles[method]);
+
   function productIsRice(product: ProductRecord) {
     if (!product.category_id) return false;
     return isRiceCategory(categoriesById.get(product.category_id));
   }
 
-  function maxQty(product: ProductRecord) {
+  function maxQty(product: CatalogProduct) {
     const stock = Number(product.stock_qty);
     if (!Number.isFinite(stock) || stock < 0) return 0;
     return productIsRice(product) ? stock : Math.floor(stock);
   }
 
-  function setQty(product: ProductRecord, next: number) {
+  function setQty(product: CatalogProduct, next: number) {
     const stockCap = maxQty(product);
     const capped = Math.max(0, Math.min(roundQty(next), stockCap));
     setCartQty((prev) => {
@@ -115,14 +163,14 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     });
   }
 
-  function qtyInputValue(product: ProductRecord, qty: number) {
+  function qtyInputValue(product: CatalogProduct, qty: number) {
     if (Object.prototype.hasOwnProperty.call(draftQtyInput, product.id)) {
       return draftQtyInput[product.id];
     }
     return qty > 0 ? formatKg(qty) : '';
   }
 
-  function commitQtyInput(product: ProductRecord) {
+  function commitQtyInput(product: CatalogProduct) {
     const raw = draftQtyInput[product.id];
     if (raw === undefined) return;
     const trimmed = raw.trim();
@@ -142,9 +190,14 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     setQty(product, n);
   }
 
-  async function placeOrder(paymentMethod: 'cash' | 'gcash') {
+  async function placeOrder(paymentMethod: PaymentMethod) {
     if (cartLines.length === 0) {
       setMessage('Add items to the order first');
+      return;
+    }
+
+    if (!paymentToggles[paymentMethod]) {
+      setMessage(`${paymentMethodLabel(paymentMethod)} is not enabled for this location`);
       return;
     }
 
@@ -167,11 +220,6 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     setMessage(null);
 
     try {
-      const staffRows = await db.getAll<{ store_id: string }>(
-        `SELECT store_id FROM ${STORE_STAFF_TABLE} WHERE user_id = ? LIMIT 1`,
-        [session.user.id]
-      );
-      const storeId = staffRows[0]?.store_id;
       if (!storeId) {
         throw new Error('No store assignment found for this user. Run store_staff insert in Supabase.');
       }
@@ -202,13 +250,13 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
             [crypto.randomUUID(), saleId, line.product.id, line.qty.toFixed(3), unitPrice, lineTotal]
           );
           await tx.execute(
-            `UPDATE ${PRODUCTS_TABLE} SET stock_qty = ?, updated_at = ? WHERE id = ?`,
-            [newStock, now, line.product.id]
+            `UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`,
+            [newStock, line.product.inventory_level_id]
           );
         }
       });
 
-      setMessage(`Order placed (${paymentMethod}) — ${formatMoney(total)}`);
+      setMessage(`Order placed (${paymentMethodLabel(paymentMethod)}) — ${formatMoney(total)}`);
       setCartQty({});
       setDraftQtyInput({});
     } catch (err) {
@@ -232,7 +280,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     await placeOrder('cash');
   }
 
-  function renderPieceQty(product: ProductRecord, qty: number, compact = false) {
+  function renderPieceQty(product: CatalogProduct, qty: number, compact = false) {
     const stock = Number(product.stock_qty);
     const outOfStock = !Number.isFinite(stock) || stock <= 0;
     const cap = maxQty(product);
@@ -264,7 +312,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     );
   }
 
-  function renderRiceQty(product: ProductRecord, qty: number, compact = false) {
+  function renderRiceQty(product: CatalogProduct, qty: number, compact = false) {
     const stock = Number(product.stock_qty);
     const outOfStock = !Number.isFinite(stock) || stock <= 0;
     const cap = maxQty(product);
@@ -433,7 +481,10 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
       <aside className="cashier-order" aria-label="Current order">
         <header className="cashier-order-header">
           <h2>Order</h2>
-          <span className="muted">{itemCount === 0 ? 'Empty' : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}</span>
+          <span className="muted">
+            {storeName ? `${storeName} · ` : ''}
+            {itemCount === 0 ? 'Empty' : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
+          </span>
         </header>
 
         <div className="cashier-order-list">
@@ -471,12 +522,39 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
             <strong>{formatMoney(totalCents)}</strong>
           </div>
           <div className="cashier-pay-actions">
-            <button type="button" className="pay-cash" disabled={busy || cartLines.length === 0} onClick={openCashModal}>
-              Cash
-            </button>
-            <button type="button" className="pay-gcash" disabled={busy || cartLines.length === 0} onClick={() => void placeOrder('gcash')}>
-              GCash
-            </button>
+            {enabledMethods.length === 0 && (
+              <p className="muted">No payment methods enabled for this location.</p>
+            )}
+            {enabledMethods.includes('cash') && (
+              <button
+                type="button"
+                className="pay-cash"
+                disabled={busy || cartLines.length === 0}
+                onClick={openCashModal}
+              >
+                Cash
+              </button>
+            )}
+            {enabledMethods.includes('gcash') && (
+              <button
+                type="button"
+                className="pay-gcash"
+                disabled={busy || cartLines.length === 0}
+                onClick={() => void placeOrder('gcash')}
+              >
+                GCash
+              </button>
+            )}
+            {enabledMethods.includes('paymongo_qr') && (
+              <button
+                type="button"
+                className="pay-paymongo"
+                disabled={busy || cartLines.length === 0}
+                onClick={() => void placeOrder('paymongo_qr')}
+              >
+                Paymongo QR
+              </button>
+            )}
           </div>
         </footer>
       </aside>

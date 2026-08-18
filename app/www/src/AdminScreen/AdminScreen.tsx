@@ -9,11 +9,21 @@ import {
 } from '../productColors';
 import {
   CATEGORIES_TABLE,
+  INVENTORY_LEVELS_TABLE,
+  PAYMENT_METHODS,
   PRODUCTS_TABLE,
+  STORES_TABLE,
   STORE_STAFF_TABLE,
   isRiceCategory,
+  newInventoryLevelId,
+  parsePaymentMethods,
+  paymentMethodLabel,
   type CategoryRecord,
-  type ProductRecord
+  type InventoryLevelRecord,
+  type PaymentMethod,
+  type PaymentMethodToggles,
+  type ProductRecord,
+  type StoreRecord
 } from '../schema';
 import '../styles/panel-view.css';
 import './AdminScreen.css';
@@ -37,6 +47,18 @@ function categoryByIdMap(categories: CategoryRecord[]) {
   return map;
 }
 
+function stockKey(productId: string, storeId: string) {
+  return `${productId}:${storeId}`;
+}
+
+function levelByProductStore(levels: InventoryLevelRecord[]) {
+  const map = new Map<string, InventoryLevelRecord>();
+  for (const level of levels) {
+    map.set(stockKey(level.product_id ?? '', level.store_id ?? ''), level);
+  }
+  return map;
+}
+
 export function AdminScreen({
   connector,
   section = 'all'
@@ -57,9 +79,9 @@ export function AdminScreen({
   const [draftKgPerSack, setDraftKgPerSack] = useState<Record<string, string>>({});
 
   const [newName, setNewName] = useState('');
-  const [newUnit, setNewUnit] = useState('kg');
+  const [newUnit, setNewUnit] = useState('pc');
   const [newPrice, setNewPrice] = useState('');
-  const [newStock, setNewStock] = useState('0');
+  const [newStockByStore, setNewStockByStore] = useState<Record<string, string>>({});
   const [newColor, setNewColor] = useState<ProductColor>('red');
   const [newCategoryId, setNewCategoryId] = useState('');
   const [newKgPerSack, setNewKgPerSack] = useState('25');
@@ -72,20 +94,32 @@ export function AdminScreen({
   const [staffError, setStaffError] = useState<string | null>(null);
   const [linkUserId, setLinkUserId] = useState('');
   const [linkRole, setLinkRole] = useState<StaffRole>('cashier');
+  const [selectedStaffStoreId, setSelectedStaffStoreId] = useState('');
+  const [paymentDraft, setPaymentDraft] = useState<Record<string, PaymentMethodToggles>>({});
 
   const userId = connector.currentSession?.user?.id ?? '';
 
   const { data: myStaff = [] } = useQuery<{ store_id: string; role: string }>(
     userId
-      ? `SELECT store_id, role FROM ${STORE_STAFF_TABLE} WHERE user_id = ? LIMIT 1`
+      ? `SELECT store_id, role FROM ${STORE_STAFF_TABLE} WHERE user_id = ?`
       : `SELECT store_id, role FROM ${STORE_STAFF_TABLE} WHERE 1 = 0`,
     userId ? [userId] : []
   );
 
-  const storeId = myStaff[0]?.store_id ?? '';
+  const hasStore = myStaff.length > 0;
+
+  const { data: stores = [] } = useQuery<StoreRecord>(
+    `SELECT * FROM ${STORES_TABLE} ORDER BY name ASC`
+  );
+
+  const staffStoreId = selectedStaffStoreId || stores[0]?.id || '';
 
   const { data: products = [], isLoading: productsLoading } = useQuery<ProductRecord>(
     `SELECT * FROM ${PRODUCTS_TABLE} ORDER BY name ASC`
+  );
+
+  const { data: inventoryLevels = [] } = useQuery<InventoryLevelRecord>(
+    `SELECT * FROM ${INVENTORY_LEVELS_TABLE}`
   );
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<CategoryRecord>(
@@ -93,6 +127,7 @@ export function AdminScreen({
   );
 
   const categoriesById = useMemo(() => categoryByIdMap(categories), [categories]);
+  const levelsByKey = useMemo(() => levelByProductStore(inventoryLevels), [inventoryLevels]);
 
   const newCategoryIsRice = useMemo(() => {
     if (!newCategoryId) return false;
@@ -100,7 +135,7 @@ export function AdminScreen({
   }, [newCategoryId, categoriesById]);
 
   const loadStaff = useCallback(async () => {
-    if (!storeId) return;
+    if (!staffStoreId) return;
     if (!navigator.onLine) {
       setStaffError('Staff list needs network. Reconnect to manage users.');
       return;
@@ -112,7 +147,7 @@ export function AdminScreen({
       const { data, error } = await connector.client
         .from('store_staff')
         .select('user_id, store_id, role, created_at')
-        .eq('store_id', storeId)
+        .eq('store_id', staffStoreId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -122,7 +157,7 @@ export function AdminScreen({
     } finally {
       setStaffLoading(false);
     }
-  }, [connector, storeId]);
+  }, [connector, staffStoreId]);
 
   useEffect(() => {
     void loadStaff();
@@ -142,10 +177,58 @@ export function AdminScreen({
     return product.kg_per_sack != null ? String(product.kg_per_sack) : '';
   }
 
+  function stockValue(productId: string, storeId: string) {
+    const key = stockKey(productId, storeId);
+    if (Object.prototype.hasOwnProperty.call(draftStock, key)) {
+      return draftStock[key];
+    }
+    const level = levelsByKey.get(key);
+    return level ? String(level.qty ?? '0') : '';
+  }
+
+  function paymentTogglesFor(store: StoreRecord): PaymentMethodToggles {
+    if (paymentDraft[store.id]) return paymentDraft[store.id];
+    return parsePaymentMethods(store.payment_methods);
+  }
+
+  function clearProductDrafts(productId: string) {
+    setDraftName((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setDraftPrice((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setDraftColor((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setDraftCategory((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setDraftKgPerSack((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setDraftStock((prev) => {
+      const next = { ...prev };
+      for (const store of stores) {
+        delete next[stockKey(productId, store.id)];
+      }
+      return next;
+    });
+  }
+
   async function saveProduct(product: ProductRecord) {
     const name = (draftName[product.id] ?? product.name ?? '').trim();
     const priceStr = draftPrice[product.id] ?? String(((product.price_cents ?? 0) / 100).toFixed(2));
-    const stockStr = draftStock[product.id] ?? String(product.stock_qty ?? '0');
     const color = draftColor[product.id] ?? (product.color as ProductColor | null) ?? 'red';
     const categoryId = selectedCategoryId(product);
     const category = categoryId ? categoriesById.get(categoryId) : undefined;
@@ -153,7 +236,6 @@ export function AdminScreen({
     const kgPerSackStr = selectedKgPerSack(product);
 
     const pricePesos = Number(priceStr);
-    const stock = Number(stockStr);
     if (!name) {
       setMessage('Product name is required');
       return;
@@ -162,8 +244,25 @@ export function AdminScreen({
       setMessage('Enter a valid price');
       return;
     }
-    if (!Number.isFinite(stock) || stock < 0) {
-      setMessage('Enter a valid stock quantity');
+
+    const locationQtys: { storeId: string; qty: number | null; level?: InventoryLevelRecord }[] = [];
+    for (const store of stores) {
+      const raw = stockValue(product.id, store.id).trim();
+      const level = levelsByKey.get(stockKey(product.id, store.id));
+      if (raw === '') {
+        locationQtys.push({ storeId: store.id, qty: null, level });
+        continue;
+      }
+      const qty = Number(raw);
+      if (!Number.isFinite(qty) || qty < 0) {
+        setMessage(`Enter a valid stock quantity for ${store.name}`);
+        return;
+      }
+      locationQtys.push({ storeId: store.id, qty, level });
+    }
+
+    if (!locationQtys.some((row) => row.qty != null)) {
+      setMessage('Assign stock at least at one location (use 0 if out of stock)');
       return;
     }
 
@@ -186,54 +285,38 @@ export function AdminScreen({
     try {
       const priceCents = Math.round(pricePesos * 100);
       const now = new Date().toISOString();
-      const unit = rice ? 'kg' : (product.unit ?? 'kg');
-      await db.execute(
-        `UPDATE ${PRODUCTS_TABLE}
-         SET name = ?, price_cents = ?, stock_qty = ?, color = ?, category_id = ?, kg_per_sack = ?, unit = ?, updated_at = ?
-         WHERE id = ?`,
-        [
-          name,
-          priceCents,
-          stock.toFixed(3),
-          color,
-          categoryId || null,
-          kgPerSack,
-          unit,
-          now,
-          product.id
-        ]
-      );
+      const unit = rice ? 'kg' : (product.unit ?? 'pc');
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(
+          `UPDATE ${PRODUCTS_TABLE}
+           SET name = ?, price_cents = ?, color = ?, category_id = ?, kg_per_sack = ?, unit = ?, updated_at = ?
+           WHERE id = ?`,
+          [name, priceCents, color, categoryId || null, kgPerSack, unit, now, product.id]
+        );
+
+        for (const row of locationQtys) {
+          if (row.qty == null) {
+            if (row.level) {
+              await tx.execute(`DELETE FROM ${INVENTORY_LEVELS_TABLE} WHERE id = ?`, [row.level.id]);
+            }
+            continue;
+          }
+          const qtyStr = row.qty.toFixed(3);
+          if (row.level) {
+            await tx.execute(`UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`, [
+              qtyStr,
+              row.level.id
+            ]);
+          } else {
+            await tx.execute(
+              `INSERT INTO ${INVENTORY_LEVELS_TABLE} (id, product_id, store_id, qty) VALUES (?, ?, ?, ?)`,
+              [newInventoryLevelId(), product.id, row.storeId, qtyStr]
+            );
+          }
+        }
+      });
       setMessage(`Updated ${name}`);
-      setDraftName((prev) => {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      });
-      setDraftPrice((prev) => {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      });
-      setDraftStock((prev) => {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      });
-      setDraftColor((prev) => {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      });
-      setDraftCategory((prev) => {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      });
-      setDraftKgPerSack((prev) => {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      });
+      clearProductDrafts(product.id);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Update failed');
     } finally {
@@ -243,7 +326,7 @@ export function AdminScreen({
 
   async function addProduct(e: React.FormEvent) {
     e.preventDefault();
-    if (!storeId) {
+    if (!hasStore) {
       setMessage('No store assignment found');
       return;
     }
@@ -251,9 +334,8 @@ export function AdminScreen({
     const name = newName.trim();
     const category = newCategoryId ? categoriesById.get(newCategoryId) : undefined;
     const rice = isRiceCategory(category);
-    const unit = rice ? 'kg' : newUnit.trim() || 'kg';
+    const unit = rice ? 'kg' : newUnit.trim() || 'pc';
     const pricePesos = Number(newPrice);
-    const stock = Number(newStock);
 
     if (!name) {
       setMessage('Product name is required');
@@ -263,8 +345,21 @@ export function AdminScreen({
       setMessage('Enter a valid price');
       return;
     }
-    if (!Number.isFinite(stock) || stock < 0) {
-      setMessage('Enter a valid stock quantity');
+
+    const locationQtys: { storeId: string; qty: number }[] = [];
+    for (const store of stores) {
+      const raw = (newStockByStore[store.id] ?? '').trim();
+      if (raw === '') continue;
+      const qty = Number(raw);
+      if (!Number.isFinite(qty) || qty < 0) {
+        setMessage(`Enter a valid stock quantity for ${store.name}`);
+        return;
+      }
+      locationQtys.push({ storeId: store.id, qty });
+    }
+
+    if (locationQtys.length === 0) {
+      setMessage('Assign stock at least at one location (use 0 if out of stock)');
       return;
     }
 
@@ -288,29 +383,25 @@ export function AdminScreen({
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       const priceCents = Math.round(pricePesos * 100);
-      await db.execute(
-        `INSERT INTO ${PRODUCTS_TABLE}
-           (id, store_id, name, unit, price_cents, stock_qty, color, category_id, kg_per_sack, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          id,
-          storeId,
-          name,
-          unit,
-          priceCents,
-          stock.toFixed(3),
-          newColor,
-          newCategoryId || null,
-          kgPerSack,
-          now,
-          now
-        ]
-      );
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(
+          `INSERT INTO ${PRODUCTS_TABLE}
+             (id, name, unit, price_cents, color, category_id, kg_per_sack, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, name, unit, priceCents, newColor, newCategoryId || null, kgPerSack, now, now]
+        );
+        for (const row of locationQtys) {
+          await tx.execute(
+            `INSERT INTO ${INVENTORY_LEVELS_TABLE} (id, product_id, store_id, qty) VALUES (?, ?, ?, ?)`,
+            [newInventoryLevelId(), id, row.storeId, row.qty.toFixed(3)]
+          );
+        }
+      });
       setMessage(`Added ${name}`);
       setNewName('');
-      setNewUnit('kg');
+      setNewUnit('pc');
       setNewPrice('');
-      setNewStock('0');
+      setNewStockByStore({});
       setNewColor('red');
       setNewCategoryId('');
       setNewKgPerSack('25');
@@ -351,7 +442,7 @@ export function AdminScreen({
 
   async function addCategory(e: React.FormEvent) {
     e.preventDefault();
-    if (!storeId) {
+    if (!hasStore) {
       setMessage('No store assignment found');
       return;
     }
@@ -368,9 +459,9 @@ export function AdminScreen({
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       await db.execute(
-        `INSERT INTO ${CATEGORIES_TABLE} (id, store_id, name, slug, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, storeId, name, null, now, now]
+        `INSERT INTO ${CATEGORIES_TABLE} (id, name, slug, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [id, name, null, now, now]
       );
       setMessage(`Added ${name}`);
       setNewCategoryName('');
@@ -406,9 +497,31 @@ export function AdminScreen({
     }
   }
 
+  async function saveStorePayments(store: StoreRecord) {
+    const toggles = paymentTogglesFor(store);
+    setBusy(true);
+    setMessage(null);
+    try {
+      await db.execute(`UPDATE ${STORES_TABLE} SET payment_methods = ? WHERE id = ?`, [
+        JSON.stringify(toggles),
+        store.id
+      ]);
+      setMessage(`Updated payment methods for ${store.name}`);
+      setPaymentDraft((prev) => {
+        const next = { ...prev };
+        delete next[store.id];
+        return next;
+      });
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Update payments failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function linkStaff(e: React.FormEvent) {
     e.preventDefault();
-    if (!storeId) {
+    if (!staffStoreId) {
       setMessage('No store assignment found');
       return;
     }
@@ -427,7 +540,7 @@ export function AdminScreen({
     setMessage(null);
     try {
       const { error } = await connector.client.from('store_staff').upsert(
-        { user_id: uid, store_id: storeId, role: linkRole },
+        { user_id: uid, store_id: staffStoreId, role: linkRole },
         { onConflict: 'user_id,store_id' }
       );
       if (error) throw error;
@@ -513,10 +626,10 @@ export function AdminScreen({
 
   const headerHint =
     section === 'users'
-      ? 'Manage store staff roles and links'
+      ? 'Manage staff and payment methods per location'
       : section === 'categories'
-        ? 'Organize products with store categories. Rice is a built-in preset for kg sales.'
-        : 'Edit stock, name, or price. Changes sync when online.';
+        ? 'Organize products with catalog categories. Rice is a built-in preset for kg sales.'
+        : 'One catalog. Stock is per location — leave a cell blank if the product is not carried there.';
 
   const successMessage =
     message?.startsWith('Updated') ||
@@ -606,7 +719,7 @@ export function AdminScreen({
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 required
               />
-              <button type="submit" className="inventory-action" disabled={busy || !storeId}>
+              <button type="submit" className="inventory-action" disabled={busy || !hasStore}>
                 Add
               </button>
             </div>
@@ -618,7 +731,9 @@ export function AdminScreen({
         <section className="inventory-section">
           {section === 'all' && <h2>Inventory</h2>}
           {section === 'all' && (
-            <p className="muted">Edit stock, name, or price. Changes sync when online.</p>
+            <p className="muted">
+              Edit name, price, and stock per location. Blank stock means not carried there.
+            </p>
           )}
 
           <div className="inventory-list">
@@ -627,7 +742,11 @@ export function AdminScreen({
               <span className="inventory-name">Name</span>
               <span className="inventory-category">Category</span>
               <span className="inventory-price">Price (₱)</span>
-              <span className="inventory-stock">Stock</span>
+              {stores.map((store) => (
+                <span key={store.id} className="inventory-stock" title={store.name ?? undefined}>
+                  {store.name}
+                </span>
+              ))}
               <span className="inventory-unit">Unit</span>
               <span className="inventory-sack">Kg/sack</span>
               <span className="inventory-action" />
@@ -637,7 +756,6 @@ export function AdminScreen({
               const nameVal = draftName[product.id] ?? product.name ?? '';
               const priceVal =
                 draftPrice[product.id] ?? String(((product.price_cents ?? 0) / 100).toFixed(2));
-              const stockVal = draftStock[product.id] ?? String(product.stock_qty ?? '0');
               const colorVal =
                 draftColor[product.id] ?? (product.color as ProductColor | null) ?? 'red';
               const categoryId = selectedCategoryId(product);
@@ -700,15 +818,24 @@ export function AdminScreen({
                     value={priceVal}
                     onChange={(e) => setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }))}
                   />
-                  <input
-                    className="inventory-stock"
-                    aria-label={`Stock for ${product.name}${rice ? ' (kg)' : ''}`}
-                    type="number"
-                    min="0"
-                    step="0.001"
-                    value={stockVal}
-                    onChange={(e) => setDraftStock((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                  />
+                  {stores.map((store) => (
+                    <input
+                      key={store.id}
+                      className="inventory-stock"
+                      aria-label={`Stock for ${product.name} at ${store.name}${rice ? ' (kg)' : ''}`}
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      placeholder="—"
+                      value={stockValue(product.id, store.id)}
+                      onChange={(e) =>
+                        setDraftStock((prev) => ({
+                          ...prev,
+                          [stockKey(product.id, store.id)]: e.target.value
+                        }))
+                      }
+                    />
+                  ))}
                   <span className="inventory-unit" title={rice ? 'kg' : (product.unit ?? '')}>
                     {rice ? 'kg' : product.unit}
                   </span>
@@ -800,17 +927,21 @@ export function AdminScreen({
                 onChange={(e) => setNewPrice(e.target.value)}
                 required
               />
-              <input
-                className="inventory-stock"
-                aria-label={newCategoryIsRice ? 'New product stock kg' : 'New product stock'}
-                type="number"
-                min="0"
-                step="0.001"
-                placeholder={newCategoryIsRice ? 'Stock kg' : 'Stock'}
-                value={newStock}
-                onChange={(e) => setNewStock(e.target.value)}
-                required
-              />
+              {stores.map((store) => (
+                <input
+                  key={store.id}
+                  className="inventory-stock"
+                  aria-label={`New product stock at ${store.name}`}
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  placeholder={store.name ?? ''}
+                  value={newStockByStore[store.id] ?? ''}
+                  onChange={(e) =>
+                    setNewStockByStore((prev) => ({ ...prev, [store.id]: e.target.value }))
+                  }
+                />
+              ))}
               {newCategoryIsRice ? (
                 <span className="inventory-unit">kg</span>
               ) : (
@@ -837,7 +968,7 @@ export function AdminScreen({
               ) : (
                 <span className="inventory-sack muted">—</span>
               )}
-              <button type="submit" className="inventory-action" disabled={busy || !storeId}>
+              <button type="submit" className="inventory-action" disabled={busy || !hasStore}>
                 Add
               </button>
             </div>
@@ -846,87 +977,150 @@ export function AdminScreen({
       )}
 
       {showUsers && (
-        <section className="card">
-          {section === 'all' && <h2>Users</h2>}
-          <p className="muted">
-            Create the Auth user in Supabase first (Auth → Users), copy their UUID, then link them here.
-            Staff list requires network.
-          </p>
+        <>
+          <section className="card">
+            {section === 'all' && <h2>Payment methods</h2>}
+            {section !== 'all' && <h2>Payment methods</h2>}
+            <p className="muted">Choose which tender buttons cashiers see at each location.</p>
 
-          {staffError && <p className="error">{staffError}</p>}
+            {stores.map((store) => {
+              const toggles = paymentTogglesFor(store);
+              return (
+                <div key={store.id} className="payment-store">
+                  <h3>{store.name}</h3>
+                  <div className="payment-toggles">
+                    {PAYMENT_METHODS.map((method: PaymentMethod) => (
+                      <label key={method}>
+                        <input
+                          type="checkbox"
+                          checked={toggles[method]}
+                          disabled={busy}
+                          onChange={(e) =>
+                            setPaymentDraft((prev) => ({
+                              ...prev,
+                              [store.id]: { ...toggles, [method]: e.target.checked }
+                            }))
+                          }
+                        />
+                        {paymentMethodLabel(method)}
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="inventory-action"
+                      disabled={busy}
+                      onClick={() => void saveStorePayments(store)}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
 
-          <div className="staff-table-wrap">
-            <table className="staff-table">
-              <thead>
-                <tr>
-                  <th>User ID</th>
-                  <th>Role</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {staff.map((row) => (
-                  <tr key={`${row.user_id}:${row.store_id}`}>
-                    <td>
-                      <code title={row.user_id}>{shortId(row.user_id)}</code>
-                      {row.user_id === userId ? <span className="muted"> (you)</span> : null}
-                    </td>
-                    <td>
-                      <select
-                        value={row.role === 'admin' ? 'admin' : 'cashier'}
-                        disabled={busy}
-                        onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
-                      >
-                        <option value="cashier">cashier</option>
-                        <option value="admin">admin</option>
-                      </select>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="secondary"
-                        disabled={busy || row.user_id === userId}
-                        onClick={() => void removeStaff(row)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {staffLoading && <p className="muted">Loading staff…</p>}
-            {!staffLoading && staff.length === 0 && !staffError && (
-              <p className="muted">No staff linked to this store yet.</p>
+          <section className="card">
+            {section === 'all' && <h2>Users</h2>}
+            <p className="muted">
+              Create the Auth user in Supabase first (Auth → Users), copy their UUID, then link them here.
+              Staff list requires network. Pick a location to manage its staff.
+            </p>
+
+            {stores.length > 1 && (
+              <label className="store-picker">
+                Location
+                <select
+                  value={staffStoreId}
+                  onChange={(e) => setSelectedStaffStoreId(e.target.value)}
+                >
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
-          </div>
 
-          <form className="admin-form" onSubmit={(e) => void linkStaff(e)}>
-            <h3>Link Auth user</h3>
-            <div className="inventory-row inventory-add">
-              <input
-                className="inventory-name"
-                aria-label="User UUID"
-                value={linkUserId}
-                onChange={(e) => setLinkUserId(e.target.value)}
-                placeholder="User UUID"
-                required
-              />
-              <select
-                className="inventory-unit inventory-unit-input"
-                aria-label="Role"
-                value={linkRole}
-                onChange={(e) => setLinkRole(e.target.value as StaffRole)}
-              >
-                <option value="cashier">cashier</option>
-                <option value="admin">admin</option>
-              </select>
-              <button type="submit" className="inventory-action" disabled={busy || !storeId || !navigator.onLine}>
-                Link
-              </button>
+            {staffError && <p className="error">{staffError}</p>}
+
+            <div className="staff-table-wrap">
+              <table className="staff-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Role</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {staff.map((row) => (
+                    <tr key={`${row.user_id}:${row.store_id}`}>
+                      <td>
+                        <code title={row.user_id}>{shortId(row.user_id)}</code>
+                        {row.user_id === userId ? <span className="muted"> (you)</span> : null}
+                      </td>
+                      <td>
+                        <select
+                          value={row.role === 'admin' ? 'admin' : 'cashier'}
+                          disabled={busy}
+                          onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
+                        >
+                          <option value="cashier">cashier</option>
+                          <option value="admin">admin</option>
+                        </select>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={busy || row.user_id === userId}
+                          onClick={() => void removeStaff(row)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {staffLoading && <p className="muted">Loading staff…</p>}
+              {!staffLoading && staff.length === 0 && !staffError && (
+                <p className="muted">No staff linked to this location yet.</p>
+              )}
             </div>
-          </form>
-        </section>
+
+            <form className="admin-form" onSubmit={(e) => void linkStaff(e)}>
+              <h3>Link Auth user</h3>
+              <div className="inventory-row inventory-add">
+                <input
+                  className="inventory-name"
+                  aria-label="User UUID"
+                  value={linkUserId}
+                  onChange={(e) => setLinkUserId(e.target.value)}
+                  placeholder="User UUID"
+                  required
+                />
+                <select
+                  className="inventory-unit inventory-unit-input"
+                  aria-label="Role"
+                  value={linkRole}
+                  onChange={(e) => setLinkRole(e.target.value as StaffRole)}
+                >
+                  <option value="cashier">cashier</option>
+                  <option value="admin">admin</option>
+                </select>
+                <button
+                  type="submit"
+                  className="inventory-action"
+                  disabled={busy || !staffStoreId || !navigator.onLine}
+                >
+                  Link
+                </button>
+              </div>
+            </form>
+          </section>
+        </>
       )}
     </div>
   );
