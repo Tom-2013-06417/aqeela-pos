@@ -989,22 +989,24 @@ export function AdminScreen({
                 <div key={store.id} className="payment-store">
                   <h3>{store.name}</h3>
                   <div className="payment-toggles">
-                    {PAYMENT_METHODS.map((method: PaymentMethod) => (
-                      <label key={method}>
-                        <input
-                          type="checkbox"
-                          checked={toggles[method]}
-                          disabled={busy}
-                          onChange={(e) =>
-                            setPaymentDraft((prev) => ({
-                              ...prev,
-                              [store.id]: { ...toggles, [method]: e.target.checked }
-                            }))
-                          }
-                        />
-                        {paymentMethodLabel(method)}
-                      </label>
-                    ))}
+                    <div className="payment-toggles-methods">
+                      {PAYMENT_METHODS.map((method: PaymentMethod) => (
+                        <label key={method}>
+                          <input
+                            type="checkbox"
+                            checked={toggles[method]}
+                            disabled={busy}
+                            onChange={(e) =>
+                              setPaymentDraft((prev) => ({
+                                ...prev,
+                                [store.id]: { ...toggles, [method]: e.target.checked }
+                              }))
+                            }
+                          />
+                          {paymentMethodLabel(method)}
+                        </label>
+                      ))}
+                    </div>
                     <button
                       type="button"
                       className="inventory-action"
@@ -1057,7 +1059,7 @@ export function AdminScreen({
                   {staff.map((row) => (
                     <tr key={`${row.user_id}:${row.store_id}`}>
                       <td>
-                        <code title={row.user_id}>{shortId(row.user_id)}</code>
+                        <code>{row.user_id}</code>
                         {row.user_id === userId ? <span className="muted"> (you)</span> : null}
                       </td>
                       <td>
@@ -1090,7 +1092,7 @@ export function AdminScreen({
               )}
             </div>
 
-            <form className="admin-form" onSubmit={(e) => void linkStaff(e)}>
+            <form className="admin-form admin-form-no-border" onSubmit={(e) => void linkStaff(e)}>
               <h3>Link Auth user</h3>
               <div className="inventory-row inventory-add">
                 <input

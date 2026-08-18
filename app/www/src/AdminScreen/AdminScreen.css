@@ -276,6 +276,11 @@
   border-top: 2px solid var(--line);
 }
 
+.admin-form-no-border {
+  border-top: none;
+  padding-top: 0;
+}
+
 .admin-form h3 {
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
@@ -285,7 +290,7 @@
 
 .staff-table-wrap {
   overflow-x: auto;
-  margin: 1rem 0;
+  margin: 1rem 0 2rem;
 }
 
 .staff-table {
@@ -326,6 +331,11 @@
   vertical-align: middle;
 }
 
+.staff-table td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .staff-table th {
   color: var(--muted);
   font-weight: 600;
@@ -351,6 +361,7 @@
   background: var(--surface);
   color: var(--ink);
   font: inherit;
+  font-size: 1rem;
   text-transform: none;
   letter-spacing: normal;
   font-weight: 400;
@@ -358,8 +369,6 @@
 
 .payment-store {
   margin: 1rem 0;
-  padding-top: 0.75rem;
-  border-top: 2px solid var(--line);
 }
 
 .payment-store h3 {
@@ -369,10 +378,14 @@
 
 .payment-toggles {
   display: flex;
-  flex-wrap: wrap;
   align-items: stretch;
-  gap: 0;
+  justify-content: space-between;
   border: 2px solid var(--line);
+}
+
+.payment-toggles-methods {
+  display: flex;
+  align-items: stretch;
 }
 
 .payment-toggles label {
@@ -383,8 +396,10 @@
   padding: 0 0.85rem;
   border-right: 2px solid var(--line);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .payment-toggles .inventory-action {
   border-right: none;
+  flex-shrink: 0;
 }
