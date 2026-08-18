@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
 import { CashPaymentModal } from '../CashPaymentModal/CashPaymentModal';
+import { PaymentConfirmModal } from '../PaymentConfirmModal/PaymentConfirmModal';
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
@@ -56,6 +57,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
+  const [pendingMethod, setPendingMethod] = useState<Exclude<PaymentMethod, 'cash'> | null>(null);
 
   const userId = connector.currentSession?.user?.id ?? '';
 
@@ -275,9 +277,25 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     setShowCashModal(true);
   }
 
+  function openPaymentConfirm(method: Exclude<PaymentMethod, 'cash'>) {
+    if (cartLines.length === 0) {
+      setMessage('Add items to the order first');
+      return;
+    }
+    setMessage(null);
+    setPendingMethod(method);
+  }
+
   async function confirmCashPayment() {
     setShowCashModal(false);
     await placeOrder('cash');
+  }
+
+  async function confirmPendingPayment() {
+    if (!pendingMethod) return;
+    const method = pendingMethod;
+    setPendingMethod(null);
+    await placeOrder(method);
   }
 
   function renderPieceQty(product: CatalogProduct, qty: number, compact = false) {
@@ -540,7 +558,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 type="button"
                 className="pay-gcash"
                 disabled={busy || cartLines.length === 0}
-                onClick={() => void placeOrder('gcash')}
+                onClick={() => openPaymentConfirm('gcash')}
               >
                 GCash
               </button>
@@ -550,7 +568,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 type="button"
                 className="pay-paymongo"
                 disabled={busy || cartLines.length === 0}
-                onClick={() => void placeOrder('paymongo_qr')}
+                onClick={() => openPaymentConfirm('paymongo_qr')}
               >
                 Paymongo QR
               </button>
@@ -565,6 +583,16 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           busy={busy}
           onCancel={() => setShowCashModal(false)}
           onConfirm={() => void confirmCashPayment()}
+        />
+      )}
+
+      {pendingMethod && (
+        <PaymentConfirmModal
+          method={pendingMethod}
+          totalCents={totalCents}
+          busy={busy}
+          onCancel={() => setPendingMethod(null)}
+          onConfirm={() => void confirmPendingPayment()}
         />
       )}
     </div>
