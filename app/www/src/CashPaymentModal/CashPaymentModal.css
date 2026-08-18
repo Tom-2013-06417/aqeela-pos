@@ -13,7 +13,7 @@
   width: 100%;
   max-width: 26rem;
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   padding: 1.25rem 1.35rem 1.35rem;
   display: flex;
   flex-direction: column;
@@ -47,7 +47,7 @@
 
 .cash-change {
   padding-top: 0.75rem;
-  border-top: 2px solid var(--line);
+  border-top: 1px solid var(--line);
 }
 
 .cash-field {
@@ -63,7 +63,7 @@
 .cash-input-wrap {
   display: flex;
   align-items: center;
-  border: 2px solid var(--line-strong);
+  border: 1px solid var(--line-strong);
   background: var(--surface);
 }
 
@@ -115,7 +115,7 @@
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
 }
 
 .cash-cancel {

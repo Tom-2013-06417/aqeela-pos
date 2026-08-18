@@ -35,7 +35,7 @@
 .inventory-list {
   display: flex;
   flex-direction: column;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   background: var(--surface);
   overflow-x: auto;
 }
@@ -44,7 +44,7 @@
   display: flex;
   align-items: stretch;
   min-height: var(--touch);
-  border-bottom: 2px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .inventory-list .inventory-row:last-child {
@@ -59,7 +59,7 @@
   height: var(--touch);
   padding: 0 0.65rem;
   border: none;
-  border-right: 2px solid var(--line);
+  border-right: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
@@ -196,11 +196,16 @@
 }
 
 .inventory-add {
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
+}
+
+.inventory-empty-state {
+  margin: 0;
+  padding: 1rem 0;
 }
 
 .inventory-row input:focus {
-  outline: 2px solid #0033cc;
+  outline: 1px solid #0033cc;
   outline-offset: -2px;
   z-index: 1;
 }
@@ -216,7 +221,7 @@
   flex-wrap: wrap;
   margin-top: 0.5rem;
   align-items: stretch;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
 }
 
 .row label {
@@ -229,7 +234,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-right: 2px solid var(--line);
+  border-right: 1px solid var(--line);
   padding: 0;
   min-height: var(--touch);
   flex: 1 1 8rem;
@@ -256,7 +261,7 @@
   min-height: var(--touch);
   padding: 0 0.9rem;
   border: none;
-  border-left: 2px solid var(--line);
+  border-left: 1px solid var(--line);
   background: #000000;
   color: #ffffff;
   font-weight: 700;
@@ -273,7 +278,6 @@
 .admin-form {
   margin-top: 1rem;
   padding-top: 0.85rem;
-  border-top: 2px solid var(--line);
 }
 
 .admin-form-no-border {
@@ -308,7 +312,7 @@
 
 .staff-table button {
   border: none;
-  border-left: 2px solid var(--line);
+  border-left: 1px solid var(--line);
   background: #000000;
   color: #ffffff;
   font-weight: 700;
@@ -320,14 +324,14 @@
 .staff-table button.secondary {
   background: #ffffff;
   color: #000000;
-  border: 2px solid #000000;
+  border: 1px solid #000000;
 }
 
 .staff-table th,
 .staff-table td {
   text-align: left;
   padding: 0.35rem 0.4rem;
-  border-bottom: 2px solid var(--line);
+  border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
 
@@ -346,7 +350,7 @@
   flex-direction: column;
   gap: 0.35rem;
   max-width: 24rem;
-  margin: 0.75rem 0;
+  margin: 0.75rem 0 2rem;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -357,7 +361,7 @@
   height: var(--touch);
   min-height: var(--touch);
   padding: 0 0.65rem;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
@@ -380,7 +384,7 @@
   display: flex;
   align-items: stretch;
   justify-content: space-between;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
 }
 
 .payment-toggles-methods {
@@ -394,7 +398,7 @@
   gap: 0.45rem;
   min-height: var(--touch);
   padding: 0 0.85rem;
-  border-right: 2px solid var(--line);
+  border-right: 1px solid var(--line);
   font-weight: 600;
   white-space: nowrap;
 }

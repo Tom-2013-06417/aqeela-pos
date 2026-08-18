@@ -865,7 +865,7 @@ export function AdminScreen({
           </div>
 
           {products.length === 0 && (
-            <p className="muted">
+            <p className="muted inventory-empty-state">
               {productsLoading || !status.hasSynced ? 'Loading products…' : 'No products yet. Add one below.'}
             </p>
           )}

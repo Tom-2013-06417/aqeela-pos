@@ -29,7 +29,7 @@
 
 .login-card input {
   padding: 0.65rem 0.75rem;
-  border: 2px solid var(--line-strong);
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
@@ -39,7 +39,7 @@
   width: 100%;
   margin-top: 0.35rem;
   padding: 0.7rem 1rem;
-  border: 2px solid #000000;
+  border: 1px solid #000000;
   border-radius: 8px;
   background: #000000;
   color: #ffffff;
@@ -87,5 +87,5 @@
   bottom: 1rem;
   width: min(24rem, calc(100% - 2rem));
   z-index: 5;
-  border: 2px solid #000000;
+  border: 1px solid #000000;
 }

@@ -61,6 +61,7 @@ select {
 
 button {
   cursor: pointer;
+  border: none;
 }
 
 button:disabled {
@@ -95,7 +96,7 @@ button:disabled {
 
 .card {
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
 }

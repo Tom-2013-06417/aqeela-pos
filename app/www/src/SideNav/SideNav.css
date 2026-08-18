@@ -142,7 +142,7 @@
 .modal {
   width: min(100%, 26rem);
   background: #ffffff;
-  border: 2px solid #000000;
+  border: 1px solid #000000;
   color: #000000;
 }
 
@@ -152,7 +152,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   line-height: 1.35;
-  border-bottom: 2px solid #000000;
+  border-bottom: 1px solid #000000;
 }
 
 .modal-actions {
@@ -173,7 +173,7 @@
 .modal-cancel {
   background: #ffffff;
   color: #000000;
-  border-right: 2px solid #000000;
+  border-right: 1px solid #000000;
 }
 
 .modal-cancel:hover {
