@@ -166,7 +166,7 @@ export function SideNav({
         >
           <IconMenu />
         </button>
-        {!collapsed && <span className="side-nav-brand">POS</span>}
+        {!collapsed && <span className="side-nav-brand">aqeela-pos</span>}
       </div>
 
       <nav className="side-nav-links" aria-label="Main">

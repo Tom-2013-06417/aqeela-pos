@@ -39,7 +39,7 @@ function LoginScreen({ connector }: { connector: SupabaseConnector }) {
 
   return (
     <div className="card login-card">
-      <h1>POS</h1>
+      <h1>aqeela-pos</h1>
       <p className="muted">Sign in to continue</p>
       {!navigator.onLine && (
         <p className="error">
@@ -278,7 +278,7 @@ export function App() {
     return (
       <div className="page centered">
         <div className="card login-card">
-          <h1>POS</h1>
+          <h1>aqeela-pos</h1>
           <p className="error">{startupError}</p>
           <p className="muted">
             Current URL: <code>{window.location.href}</code>

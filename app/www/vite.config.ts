@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'POS',
-        short_name: 'POS',
+        name: 'aqeela-pos',
+        short_name: 'aqeela-pos',
         description: 'Offline-first point of sale',
         theme_color: '#2563eb',
         background_color: '#f4f6f8',

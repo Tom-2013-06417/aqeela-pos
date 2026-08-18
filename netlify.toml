@@ -1,0 +1,33 @@
+[build]
+  command = "npm run build"
+  publish = "app/www/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# SPA + PWA: existing files win; everything else serves the app shell.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/workbox-*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/assets/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"

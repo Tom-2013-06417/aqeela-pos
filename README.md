@@ -155,6 +155,25 @@ On a tablet, use **Add to Home Screen** for a standalone kiosk-style launch.
 
 Service workers are disabled in `npm run dev` (HMR conflict). Test offline behavior with `build` + `preview`, or a deployed HTTPS host.
 
+### Test production (Netlify)
+
+The PWA is on [https://aqeela-pos.netlify.app](https://aqeela-pos.netlify.app) (`netlify.toml` at the repo root). It talks to the same cloud Supabase + Railway PowerSync as local `.env.local`.
+
+Redeploy from a machine that already has `app/www/.env.local`:
+
+```bash
+npm run build
+netlify deploy --prod --no-build --dir app/www/dist --filter @pos/www
+```
+
+Vite inlines `VITE_*` at build time. If you later connect the GitHub repo for CI deploys, set these in the Netlify UI (**Project configuration → Environment variables**), scoped to **Builds**:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_POWERSYNC_URL`
+
+In Supabase, add `https://aqeela-pos.netlify.app` under **Authentication → URL configuration → Additional redirect URLs** (email/password still works without it).
+
 ## 4. Verify
 
 | Step             | Expected                                                                |
