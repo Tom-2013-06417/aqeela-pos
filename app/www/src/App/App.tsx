@@ -187,7 +187,7 @@ function AuthedApp({
 
       <main className="pos-main">
         {view === 'cashier' && <CashierScreen connector={connector} />}
-        {view === 'sales' && <SalesScreen />}
+        {view === 'sales' && <SalesScreen isAdmin={isAdmin} />}
         {view === 'inventory' && isAdmin && <AdminScreen connector={connector} section="inventory" />}
         {view === 'categories' && isAdmin && <AdminScreen connector={connector} section="categories" />}
         {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}

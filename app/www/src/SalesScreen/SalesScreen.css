@@ -7,15 +7,53 @@
   border-radius: var(--radius);
 }
 
-.sales-list li {
+.sales-item {
+  border-bottom: 1px solid var(--line);
+}
+
+.sales-item:last-child {
+  border-bottom: none;
+}
+
+.sales-row {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
+  border: none;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sales-row:hover {
+  background: var(--surface-2);
+}
+
+.sales-lines {
+  padding: 0 1rem 0.75rem;
+  background: var(--surface);
+}
+
+.sales-lines ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+}
+
+.sales-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
   border-bottom: 1px solid var(--line);
 }
 
-.sales-list li:last-child {
+.sales-lines li:last-child {
   border-bottom: none;
 }
