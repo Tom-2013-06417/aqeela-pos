@@ -1,3 +1,44 @@
+.sales-toast {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.sales-toast.success {
+  border-color: #006600;
+  color: #006600;
+  background: #e6ffe6;
+}
+
+.sales-toast.error {
+  border-color: #cc0000;
+  color: #cc0000;
+  background: #ffe6e6;
+}
+
+.sales-admin-actions {
+  margin-bottom: 0.75rem;
+}
+
+.sales-danger-btn {
+  min-height: var(--touch);
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 0 0.75rem;
+}
+
+.sales-danger-btn:hover:not(:disabled) {
+  background: #000000;
+  color: #ffffff;
+}
+
 .sales-list {
   list-style: none;
   padding: 0;
@@ -16,6 +57,11 @@
 }
 
 .sales-row {
+  display: flex;
+  align-items: center;
+}
+
+.sales-expand {
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -30,8 +76,26 @@
   text-align: left;
 }
 
-.sales-row:hover {
+.sales-expand:hover {
   background: var(--surface-2);
+}
+
+.sales-row-delete {
+  min-height: var(--touch);
+  border: none;
+  border-left: 1px solid var(--line);
+  background: #000000;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 0.75rem;
+  cursor: pointer;
+}
+
+.sales-row-delete:hover:not(:disabled) {
+  background: #222222;
 }
 
 .sales-lines {

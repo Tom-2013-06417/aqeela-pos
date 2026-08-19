@@ -7,6 +7,7 @@ import {
   STORES_TABLE,
   paymentMethodLabel
 } from '../schema';
+import { db } from '../powerSync';
 import '../styles/panel-view.css';
 import './SalesScreen.css';
 
@@ -23,6 +24,8 @@ function formatQty(qty: string) {
 
 export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   const [expandedSaleIds, setExpandedSaleIds] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const { data: sales = [], isLoading } = useQuery<{
     id: string;
     store_id: string;
@@ -69,6 +72,46 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     }));
   }
 
+  async function deleteSale(saleId: string) {
+    if (!window.confirm('Delete this sale and all its line items?')) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(`DELETE FROM ${SALE_LINES_TABLE} WHERE sale_id = ?`, [saleId]);
+        await tx.execute(`DELETE FROM ${SALES_TABLE} WHERE id = ?`, [saleId]);
+      });
+      setExpandedSaleIds((prev) => {
+        const next = { ...prev };
+        delete next[saleId];
+        return next;
+      });
+      setMessage('Sale deleted.');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Failed to delete sale.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearAllSales() {
+    if (!window.confirm('Clear all sales history on this device? This cannot be undone.')) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(`DELETE FROM ${SALE_LINES_TABLE}`);
+        await tx.execute(`DELETE FROM ${SALES_TABLE}`);
+      });
+      setExpandedSaleIds({});
+      setMessage('All sales history cleared.');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Failed to clear sales history.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="panel-view">
       <header className="panel-view-header">
@@ -77,6 +120,14 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
       </header>
 
       <div className="panel-view-body">
+        {message && <p className={`sales-toast ${message.includes('Failed') ? 'error' : 'success'}`}>{message}</p>}
+        {isAdmin && (
+          <div className="sales-admin-actions">
+            <button type="button" className="sales-danger-btn" disabled={busy || sales.length === 0} onClick={() => void clearAllSales()}>
+              Clear all sales
+            </button>
+          </div>
+        )}
         {isLoading && <p className="muted">Loading…</p>}
         {!isLoading && sales.length === 0 && <p className="muted">No sales yet.</p>}
         <ul className="sales-list">
@@ -85,17 +136,29 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
             const lines = linesBySaleId.get(sale.id) ?? [];
             return (
               <li key={sale.id} className="sales-item">
-                <button
-                  type="button"
-                  className="sales-row"
-                  aria-expanded={isExpanded}
-                  onClick={() => toggleSaleExpanded(sale.id)}
-                >
-                  <span>{formatMoney(sale.total_cents)}</span>
-                  <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
-                  {isAdmin && <span className="muted">{sale.store_name ?? 'Unknown branch'}</span>}
-                  <span className="muted">{new Date(sale.created_at).toLocaleString()}</span>
-                </button>
+                <div className="sales-row">
+                  <button
+                    type="button"
+                    className="sales-expand"
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleSaleExpanded(sale.id)}
+                  >
+                    <span>{formatMoney(sale.total_cents)}</span>
+                    <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
+                    {isAdmin && <span className="muted">{sale.store_name ?? 'Unknown branch'}</span>}
+                    <span className="muted">{new Date(sale.created_at).toLocaleString()}</span>
+                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className="sales-row-delete"
+                      disabled={busy}
+                      onClick={() => void deleteSale(sale.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
 
                 {isExpanded && (
                   <div className="sales-lines">
