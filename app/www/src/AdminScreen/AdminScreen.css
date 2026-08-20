@@ -70,8 +70,12 @@
   border-right: none;
 }
 
+.inventory-row > *:not(.inventory-action):has(+ .inventory-action) {
+  border-right: none;
+}
+
 .inventory-name {
-  flex: 1 1 auto;
+  flex: 0 0 12rem;
 }
 
 .inventory-color {
@@ -102,7 +106,6 @@
 }
 
 .inventory-head .inventory-stock {
-  font-size: 0.7rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -146,6 +149,7 @@
 
 .inventory-action {
   flex: 0 0 5.5rem;
+  margin-left: auto;
   justify-content: center;
   background: #000000;
   color: #ffffff;
@@ -154,6 +158,10 @@
   letter-spacing: 0.06em;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.inventory-action + .inventory-action {
+  margin-left: 0;
 }
 
 .inventory-action:hover:not(:disabled) {

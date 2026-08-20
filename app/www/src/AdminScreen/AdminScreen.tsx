@@ -47,6 +47,14 @@ function stockKey(productId: string, storeId: string) {
   return `${productId}:${storeId}`;
 }
 
+function formatQty(qty: string | number | null | undefined) {
+  if (qty == null || qty === '') return '';
+  const n = Number(qty);
+  if (!Number.isFinite(n)) return String(qty);
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(3).replace(/\.?0+$/, '');
+}
+
 function levelByProductStore(levels: InventoryLevelRecord[]) {
   const map = new Map<string, InventoryLevelRecord>();
   for (const level of levels) {
@@ -189,7 +197,7 @@ export function AdminScreen({
       return draftStock[key];
     }
     const level = levelsByKey.get(key);
-    return level ? String(level.qty ?? '0') : '';
+    return level ? formatQty(level.qty ?? '0') : '';
   }
 
   function paymentTogglesFor(store: StoreRecord): PaymentMethodToggles {
@@ -829,9 +837,8 @@ export function AdminScreen({
                       key={store.id}
                       className="inventory-stock"
                       aria-label={`Stock for ${product.name} at ${store.name}${rice ? ' (kg)' : ''}`}
-                      type="number"
-                      min="0"
-                      step="0.001"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="—"
                       value={stockValue(product.id, store.id)}
                       onChange={(e) =>
@@ -939,9 +946,8 @@ export function AdminScreen({
                   key={store.id}
                   className="inventory-stock"
                   aria-label={`New product stock at ${store.name}`}
-                  type="number"
-                  min="0"
-                  step="0.001"
+                  type="text"
+                  inputMode="decimal"
                   placeholder={store.name ?? ''}
                   value={newStockByStore[store.id] ?? ''}
                   onChange={(e) =>
