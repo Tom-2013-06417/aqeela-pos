@@ -9,11 +9,18 @@
   background: var(--nav-bg);
   color: var(--nav-ink);
   overflow: hidden;
+  transition: width 0.22s ease, flex-basis 0.22s ease;
 }
 
 .side-nav.collapsed {
   flex-basis: var(--nav-width-collapsed);
   width: var(--nav-width-collapsed);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-nav {
+    transition: none;
+  }
 }
 
 .side-nav-top {
