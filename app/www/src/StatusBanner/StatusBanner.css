@@ -1,0 +1,59 @@
+.status-banner-slot {
+  position: fixed;
+  top: 0.75rem;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  height: 0;
+  margin: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.status-banner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  width: min(36rem, calc(100% - 2rem));
+  height: 2.5rem;
+  margin: 0;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-120%);
+  transition: transform 0.28s ease;
+}
+
+.status-banner.is-in {
+  transform: translateY(0);
+}
+
+.status-banner.is-out {
+  transform: translateY(-120%);
+}
+
+.status-banner.success {
+  border-color: #006600;
+  background: #e6ffe6;
+  color: #006600;
+}
+
+.status-banner.error {
+  border-color: #cc0000;
+  background: #ffe6e6;
+  color: #cc0000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-banner {
+    transition: none;
+  }
+}

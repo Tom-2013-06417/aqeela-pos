@@ -5,6 +5,7 @@ import { PaymentConfirmModal } from '../PaymentConfirmModal/PaymentConfirmModal'
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
+import { StatusBanner } from '../StatusBanner/StatusBanner';
 import {
   CATEGORIES_TABLE,
   INVENTORY_LEVELS_TABLE,
@@ -438,11 +439,11 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
-          {message && (
-            <p className={`cashier-toast ${message.startsWith('Order') ? 'success' : 'error'}`} role="status">
-              {message}
-            </p>
-          )}
+          <StatusBanner
+            message={message}
+            variant={message?.startsWith('Order') ? 'success' : 'error'}
+            onDismiss={() => setMessage(null)}
+          />
         </div>
 
         <div className="product-grid">

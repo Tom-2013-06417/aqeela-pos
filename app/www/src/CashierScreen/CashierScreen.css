@@ -32,27 +32,6 @@
   color: var(--ink);
 }
 
-.cashier-toast {
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  font-size: 0.9rem;
-}
-
-.cashier-toast.success {
-  border-color: #006600;
-  background: #e6ffe6;
-  color: #006600;
-}
-
-.cashier-toast.error {
-  border-color: #cc0000;
-  background: #ffe6e6;
-  color: #cc0000;
-}
-
 .product-grid {
   display: flex;
   flex-wrap: wrap;

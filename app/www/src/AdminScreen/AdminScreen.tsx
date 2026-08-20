@@ -7,6 +7,7 @@ import {
   productColorHex,
   type ProductColor
 } from '../productColors';
+import { StatusBanner } from '../StatusBanner/StatusBanner';
 import {
   CATEGORIES_TABLE,
   INVENTORY_LEVELS_TABLE,
@@ -659,7 +660,11 @@ export function AdminScreen({
         <p className="muted">{headerHint}</p>
       </header>
 
-      {message && <p className={successMessage ? 'success' : 'error'}>{message}</p>}
+      <StatusBanner
+        message={message}
+        variant={successMessage ? 'success' : 'error'}
+        onDismiss={() => setMessage(null)}
+      />
 
       {showCategories && (
         <section className="inventory-section">

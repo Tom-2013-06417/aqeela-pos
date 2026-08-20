@@ -8,6 +8,7 @@ import {
   paymentMethodLabel
 } from '../schema';
 import { db } from '../powerSync';
+import { StatusBanner } from '../StatusBanner/StatusBanner';
 import '../styles/panel-view.css';
 import './SalesScreen.css';
 
@@ -120,7 +121,11 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
       </header>
 
       <div className="panel-view-body">
-        {message && <p className={`sales-toast ${message.includes('Failed') ? 'error' : 'success'}`}>{message}</p>}
+        <StatusBanner
+          message={message}
+          variant={message?.includes('Failed') ? 'error' : 'success'}
+          onDismiss={() => setMessage(null)}
+        />
         {isAdmin && (
           <div className="sales-admin-actions">
             <button type="button" className="sales-danger-btn" disabled={busy || sales.length === 0} onClick={() => void clearAllSales()}>
