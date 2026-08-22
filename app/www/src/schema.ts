@@ -19,25 +19,41 @@ const DEFAULT_PAYMENT_METHODS: PaymentMethodToggles = {
   paymongo_qr: false
 };
 
-export function parsePaymentMethods(raw: unknown): PaymentMethodToggles {
-  let parsed: Record<string, unknown> | null = null;
-  if (typeof raw === 'string' && raw.trim() !== '') {
-    try {
-      parsed = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      parsed = null;
+function unwrapJsonObject(raw: unknown): Record<string, unknown> | null {
+  let value: unknown = raw;
+  // PowerSync stores jsonb as text; a bad upload round-trip can double-encode the payload.
+  for (let depth = 0; depth < 3; depth++) {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed === '') return null;
+      try {
+        value = JSON.parse(trimmed);
+      } catch {
+        return null;
+      }
+      continue;
     }
-  } else if (raw && typeof raw === 'object') {
-    parsed = raw as Record<string, unknown>;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+    return null;
   }
+  return null;
+}
 
+export function parsePaymentMethods(raw: unknown): PaymentMethodToggles {
+  const parsed = unwrapJsonObject(raw);
   if (!parsed) return { ...DEFAULT_PAYMENT_METHODS };
 
   return {
-    cash: parsed.cash !== false,
-    gcash: parsed.gcash !== false,
+    cash: parsed.cash === true,
+    gcash: parsed.gcash === true,
     paymongo_qr: parsed.paymongo_qr === true
   };
+}
+
+export function serializePaymentMethods(toggles: PaymentMethodToggles): string {
+  return JSON.stringify(toggles);
 }
 
 export function paymentMethodLabel(method: string) {

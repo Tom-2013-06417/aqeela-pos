@@ -19,6 +19,7 @@ import {
   newInventoryLevelId,
   parsePaymentMethods,
   paymentMethodLabel,
+  serializePaymentMethods,
   type CategoryRecord,
   type InventoryLevelRecord,
   type PaymentMethod,
@@ -518,7 +519,7 @@ export function AdminScreen({
     setMessage(null);
     try {
       await db.execute(`UPDATE ${STORES_TABLE} SET payment_methods = ? WHERE id = ?`, [
-        JSON.stringify(toggles),
+        serializePaymentMethods(toggles),
         store.id
       ]);
       setMessage(`Updated payment methods for ${store.name}`);

@@ -14,6 +14,21 @@ const FATAL_RESPONSE_CODES = [
   new RegExp('^42501$')
 ];
 
+/** Local SQLite stores jsonb columns as text; Supabase expects parsed JSON objects. */
+function coerceUploadData(table: string, data: Record<string, unknown>): Record<string, unknown> {
+  if (table !== 'stores' || data.payment_methods == null) return data;
+
+  const coerced = { ...data };
+  if (typeof coerced.payment_methods === 'string') {
+    try {
+      coerced.payment_methods = JSON.parse(coerced.payment_methods);
+    } catch {
+      // Leave as-is; Supabase will reject invalid json if needed.
+    }
+  }
+  return coerced;
+}
+
 export type SupabaseConnectorListener = {
   initialized: () => void;
   sessionStarted: (session: Session) => void;
@@ -131,12 +146,14 @@ export class SupabaseConnector
 
         switch (op.op) {
           case UpdateType.PUT: {
-            const record = { ...op.opData, id: op.id };
+            const record = coerceUploadData(op.table, { ...op.opData, id: op.id });
             result = await table.upsert(record);
             break;
           }
           case UpdateType.PATCH:
-            result = await table.update(op.opData ?? {}).eq('id', op.id);
+            result = await table
+              .update(coerceUploadData(op.table, op.opData ?? {}))
+              .eq('id', op.id);
             break;
           case UpdateType.DELETE:
             result = await table.delete().eq('id', op.id);
