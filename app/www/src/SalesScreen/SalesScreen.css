@@ -102,3 +102,31 @@
 .sales-lines li:last-child {
   border-bottom: none;
 }
+
+.sales-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.sales-pagination button {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0 0.65rem;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sales-pagination button:hover:not([aria-current='page']) {
+  background: var(--surface-2);
+}
+
+.sales-pagination button[aria-current='page'] {
+  background: #000000;
+  color: #ffffff;
+}

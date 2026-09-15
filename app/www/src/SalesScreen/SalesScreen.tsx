@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@powersync/react';
 import {
   PRODUCTS_TABLE,
@@ -12,6 +12,8 @@ import { StatusBanner } from '../StatusBanner/StatusBanner';
 import '../styles/panel-view.css';
 import './SalesScreen.css';
 
+const PAGE_SIZE = 50;
+
 function formatMoney(cents: number) {
   return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 }
@@ -24,9 +26,23 @@ function formatQty(qty: string) {
 }
 
 export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
+  const [page, setPage] = useState(1);
+  const viewRef = useRef<HTMLDivElement>(null);
   const [expandedSaleIds, setExpandedSaleIds] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const { data: countRows = [] } = useQuery<{ total: number | string }>(
+    `SELECT COUNT(*) as total FROM ${SALES_TABLE}`
+  );
+  const totalSales = Number(countRows[0]?.total ?? 0);
+  const pageCount = Math.max(1, Math.ceil(totalSales / PAGE_SIZE));
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const offset = (page - 1) * PAGE_SIZE;
   const { data: sales = [], isLoading } = useQuery<{
     id: string;
     store_id: string;
@@ -39,8 +55,15 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
      FROM ${SALES_TABLE} s
      LEFT JOIN ${STORES_TABLE} st ON st.id = s.store_id
      ORDER BY s.created_at DESC
-     LIMIT 50`
+     LIMIT ${PAGE_SIZE} OFFSET ${offset}`
   );
+
+  const pages = useMemo(() => Array.from({ length: pageCount }, (_, i) => i + 1), [pageCount]);
+
+  function goToPage(nextPage: number) {
+    setPage(nextPage);
+    viewRef.current?.scrollTo({ top: 0 });
+  }
 
   const { data: saleLines = [] } = useQuery<{
     sale_id: string;
@@ -105,6 +128,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
         await tx.execute(`DELETE FROM ${SALES_TABLE}`);
       });
       setExpandedSaleIds({});
+      setPage(1);
       setMessage('All sales history cleared.');
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Failed to clear sales history.');
@@ -114,7 +138,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   }
 
   return (
-    <div className="panel-view">
+    <div className="panel-view" ref={viewRef}>
       <header className="panel-view-header">
         <h1>Sales</h1>
         <p className="muted">Recent orders on this device</p>
@@ -128,13 +152,13 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
         />
         {isAdmin && (
           <div className="sales-admin-actions">
-            <button type="button" className="sales-danger-btn" disabled={busy || sales.length === 0} onClick={() => void clearAllSales()}>
+            <button type="button" className="sales-danger-btn" disabled={busy || (totalSales === 0 && sales.length === 0)} onClick={() => void clearAllSales()}>
               Clear all sales
             </button>
           </div>
         )}
-        {isLoading && <p className="muted">Loading…</p>}
-        {!isLoading && sales.length === 0 && <p className="muted">No sales yet.</p>}
+        {isLoading && sales.length === 0 && <p className="muted">Loading…</p>}
+        {!isLoading && sales.length === 0 && totalSales === 0 && <p className="muted">No sales yet.</p>}
         <ul className="sales-list">
           {sales.map((sale) => {
             const isExpanded = expandedSaleIds[sale.id] === true;
@@ -187,6 +211,20 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
             );
           })}
         </ul>
+        {totalSales > 0 && (
+          <nav className="sales-pagination" aria-label="Sales pages">
+            {pages.map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                aria-current={pageNumber === page ? 'page' : undefined}
+                onClick={() => goToPage(pageNumber)}
+              >
+                {pageNumber}
+              </button>
+            ))}
+          </nav>
+        )}
       </div>
     </div>
   );
