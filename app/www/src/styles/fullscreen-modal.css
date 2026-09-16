@@ -159,15 +159,15 @@
   border: 1px solid var(--line);
 }
 
-.desktop-only {
-  /* Visible by default; hidden below. */
-}
-
 .mobile-only {
   display: none;
 }
 
 @media (max-width: 700px) {
+  /* Beat component display rules (e.g. .inventory-list { display: flex }) */
+  .desktop-only.inventory-list,
+  .desktop-only.admin-form,
+  .desktop-only.staff-table-wrap,
   .desktop-only {
     display: none;
   }

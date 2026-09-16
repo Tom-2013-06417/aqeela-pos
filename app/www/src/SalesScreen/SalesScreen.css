@@ -197,4 +197,8 @@
   .sales-delete-in-expand.mobile-only {
     display: block;
   }
+
+  .sales-row-delete.desktop-only {
+    display: none;
+  }
 }
