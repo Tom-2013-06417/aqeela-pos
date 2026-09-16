@@ -7,9 +7,17 @@ import { SupabaseConnector } from '../connector';
 import { PwaBanner } from '../PwaBanner/PwaBanner';
 import { db } from '../powerSync';
 import { SalesScreen } from '../SalesScreen/SalesScreen';
-import { SideNav, type AppView } from '../SideNav/SideNav';
+import { SideNav, VIEW_LABELS, type AppView } from '../SideNav/SideNav';
 import { STORE_STAFF_TABLE } from '../schema';
 import './App.css';
+
+function IconMenu() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
 
 function useDiagnosticsEnabled() {
   return useMemo(
@@ -145,6 +153,7 @@ function AuthedApp({
   const isAdmin = staffRows.some((row) => row.role === 'admin');
   const [view, setView] = useState<AppView>('sales');
   const [navCollapsed, setNavCollapsed] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
@@ -170,29 +179,62 @@ function AuthedApp({
     return <div className="page centered">Loading…</div>;
   }
 
+  const syncOk = status.connected && Boolean(status.hasSynced);
+  const syncLabel = status.connected
+    ? status.hasSynced
+      ? 'Synced'
+      : 'Syncing…'
+    : navigator.onLine
+      ? 'Connecting…'
+      : 'Offline';
+
   return (
     <div className="pos-shell">
       <SideNav
         view={view}
         isAdmin={isAdmin}
         collapsed={navCollapsed}
+        mobileOpen={mobileNavOpen}
         connected={status.connected}
         hasSynced={Boolean(status.hasSynced)}
         email={connector.currentSession?.user?.email}
         signingOut={signingOut}
         onNavigate={setView}
         onToggle={() => setNavCollapsed((c) => !c)}
+        onCloseMobile={() => setMobileNavOpen(false)}
         onSignOut={() => void handleSignOut()}
       />
 
-      <main className="pos-main">
-        {view === 'cashier' && <CashierScreen connector={connector} />}
-        {view === 'sales' && <SalesScreen isAdmin={isAdmin} />}
-        {view === 'inventory' && isAdmin && <AdminScreen connector={connector} section="inventory" />}
-        {view === 'categories' && isAdmin && <AdminScreen connector={connector} section="categories" />}
-        {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}
-        {showDiagnostics && <DiagnosticsPanel connector={connector} userId={userId} />}
-      </main>
+      <div className="pos-content">
+        <header className="pos-mobile-bar">
+          <button
+            type="button"
+            className="pos-mobile-menu"
+            aria-label="Open navigation"
+            aria-expanded={mobileNavOpen}
+            onClick={() => setMobileNavOpen(true)}
+          >
+            <IconMenu />
+          </button>
+          <span className="pos-mobile-title">{VIEW_LABELS[view]}</span>
+          <span
+            className={`pos-mobile-sync ${syncOk ? 'ok' : 'warn'}`}
+            title={syncLabel}
+          >
+            <span className="pos-mobile-sync-dot" />
+            <span className="pos-mobile-sync-label">{syncLabel}</span>
+          </span>
+        </header>
+
+        <main className="pos-main">
+          {view === 'cashier' && <CashierScreen connector={connector} />}
+          {view === 'sales' && <SalesScreen isAdmin={isAdmin} />}
+          {view === 'inventory' && isAdmin && <AdminScreen connector={connector} section="inventory" />}
+          {view === 'categories' && isAdmin && <AdminScreen connector={connector} section="categories" />}
+          {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}
+          {showDiagnostics && <DiagnosticsPanel connector={connector} userId={userId} />}
+        </main>
+      </div>
     </div>
   );
 }

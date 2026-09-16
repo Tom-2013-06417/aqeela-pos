@@ -296,6 +296,18 @@
   flex-shrink: 0;
 }
 
+.cashier-order-close {
+  display: none;
+}
+
+.cashier-order-bar {
+  display: none;
+}
+
+.cashier-order-backdrop {
+  display: none;
+}
+
 .cashier-order-header h2 {
   margin: 0;
   font-size: 0.95rem;
@@ -431,18 +443,160 @@
 @media (max-width: 700px) {
   .cashier {
     flex-direction: column;
+    padding-bottom: 3.5rem;
   }
 
   .cashier-catalog {
     flex: 1 1 auto;
     border-right: none;
-    border-bottom: 1px solid var(--line);
+    border-bottom: none;
+    padding: 0.75rem;
+  }
+
+  .product-grid {
+    gap: 0.5rem;
+  }
+
+  .product-tile {
+    flex: 0 0 calc((100% - 0.5rem) / 2);
+    width: calc((100% - 0.5rem) / 2);
+    max-width: calc((100% - 0.5rem) / 2);
+    overflow: visible;
+    --qty-touch: 2.5rem;
+  }
+
+  .product-tile-image {
+    aspect-ratio: 2.4 / 1;
+    font-size: 1.25rem;
+  }
+
+  .product-tile-body {
+    padding: 0.45rem 0.5rem 0.25rem;
+    gap: 0.1rem;
+  }
+
+  .product-tile-name {
+    font-size: 0.8rem;
+  }
+
+  .product-tile-price {
+    font-size: 0.9rem;
+  }
+
+  .product-tile-stock,
+  .product-tile-per {
+    font-size: 0.7rem;
+  }
+
+  .qty-btn {
+    font-size: 1.25rem;
+  }
+
+  .qty-value {
+    font-size: 1rem;
+  }
+
+  .rice-preset {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.1rem;
   }
 
   .cashier-order {
-    flex: 0 0 min(42vh, 22rem);
+    display: none;
+    flex: none;
     width: 100%;
     min-width: 0;
-    height: min(42vh, 22rem);
+    height: auto;
+  }
+
+  .cashier-order.sheet-open {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    max-height: 100dvh;
+  }
+
+  .cashier-order-header {
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .cashier-order-close {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    min-height: var(--touch);
+    padding: 0 0.75rem;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+
+  .cashier-order-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    min-height: 3.25rem;
+    padding: 0.5rem 0.85rem;
+    border-top: 1px solid var(--line);
+    background: #000000;
+    color: #ffffff;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .cashier-order-bar-count {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cashier-order-bar-total {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .cashier-order-bar-cta {
+    flex-shrink: 0;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .cashier-order-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .cashier-pay-actions button {
+    min-height: 3.25rem;
   }
 }

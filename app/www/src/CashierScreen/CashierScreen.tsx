@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
 import { CashPaymentModal } from '../CashPaymentModal/CashPaymentModal';
 import { PaymentConfirmModal } from '../PaymentConfirmModal/PaymentConfirmModal';
@@ -6,6 +6,7 @@ import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
 import { StatusBanner } from '../StatusBanner/StatusBanner';
+import '../styles/fullscreen-modal.css';
 import {
   CATEGORIES_TABLE,
   INVENTORY_LEVELS_TABLE,
@@ -59,6 +60,16 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [busy, setBusy] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
   const [pendingMethod, setPendingMethod] = useState<Exclude<PaymentMethod, 'cash'> | null>(null);
+  const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!orderSheetOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOrderSheetOpen(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [orderSheetOpen]);
 
   const userId = connector.currentSession?.user?.id ?? '';
 
@@ -262,6 +273,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
       setMessage(`Order placed (${paymentMethodLabel(paymentMethod)}) — ${formatMoney(total)}`);
       setCartQty({});
       setDraftQtyInput({});
+      setOrderSheetOpen(false);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Sale failed');
     } finally {
@@ -497,13 +509,23 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         )}
       </section>
 
-      <aside className="cashier-order" aria-label="Current order">
+      <aside
+        className={`cashier-order ${orderSheetOpen ? 'sheet-open' : ''}`}
+        aria-label="Current order"
+      >
         <header className="cashier-order-header">
           <h2>Order</h2>
           <span className="muted">
             {storeName ? `${storeName} · ` : ''}
             {itemCount === 0 ? 'Empty' : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
           </span>
+          <button
+            type="button"
+            className="cashier-order-close mobile-only"
+            onClick={() => setOrderSheetOpen(false)}
+          >
+            Close
+          </button>
         </header>
 
         <div className="cashier-order-list">
@@ -577,6 +599,30 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           </div>
         </footer>
       </aside>
+
+      {!orderSheetOpen && (
+        <button
+          type="button"
+          className="cashier-order-bar"
+          onClick={() => setOrderSheetOpen(true)}
+        >
+          <span className="cashier-order-bar-count">
+            {itemCount === 0
+              ? 'Empty'
+              : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
+          </span>
+          <span className="cashier-order-bar-total">{formatMoney(totalCents)}</span>
+          <span className="cashier-order-bar-cta">View</span>
+        </button>
+      )}
+
+      {orderSheetOpen && (
+        <div
+          className="cashier-order-backdrop"
+          role="presentation"
+          onClick={() => setOrderSheetOpen(false)}
+        />
+      )}
 
       {showCashModal && (
         <CashPaymentModal

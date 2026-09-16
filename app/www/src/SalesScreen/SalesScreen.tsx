@@ -10,6 +10,7 @@ import {
 import { db } from '../powerSync';
 import { StatusBanner } from '../StatusBanner/StatusBanner';
 import '../styles/panel-view.css';
+import '../styles/fullscreen-modal.css';
 import './SalesScreen.css';
 
 const PAGE_SIZE = 50;
@@ -172,15 +173,30 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                     aria-expanded={isExpanded}
                     onClick={() => toggleSaleExpanded(sale.id)}
                   >
-                    <span>{formatMoney(sale.total_cents)}</span>
-                    <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
-                    {isAdmin && <span className="muted">{sale.store_name ?? 'Unknown branch'}</span>}
-                    <span className="muted">{new Date(sale.created_at).toLocaleString()}</span>
+                    <span className="sales-expand-primary">
+                      <span className="sales-amount">{formatMoney(sale.total_cents)}</span>
+                      <span className="muted sales-date">
+                        {new Date(sale.created_at).toLocaleString('en-US', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </span>
+                    </span>
+                    <span className="sales-expand-meta">
+                      <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
+                      {isAdmin && (
+                        <span className="muted">{sale.store_name ?? 'Unknown branch'}</span>
+                      )}
+                    </span>
                   </button>
                   {isAdmin && (
                     <button
                       type="button"
-                      className="sales-row-delete"
+                      className="sales-row-delete desktop-only"
                       disabled={busy}
                       onClick={() => void deleteSale(sale.id)}
                     >
@@ -198,12 +214,22 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                         {lines.map((line, index) => (
                           <li key={`${sale.id}:${line.product_name ?? 'unknown'}:${index}`}>
                             <span>
-                              {line.product_name ?? 'Unknown item'} x {formatQty(line.qty)}
+                              {line.product_name ?? 'Unknown item'} × {formatQty(line.qty)}
                             </span>
                             <span>{formatMoney(line.line_total_cents ?? 0)}</span>
                           </li>
                         ))}
                       </ul>
+                    )}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="sales-row-delete sales-delete-in-expand mobile-only"
+                        disabled={busy}
+                        onClick={() => void deleteSale(sale.id)}
+                      >
+                        Delete sale
+                      </button>
                     )}
                   </div>
                 )}

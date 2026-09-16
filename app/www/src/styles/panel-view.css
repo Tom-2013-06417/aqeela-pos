@@ -19,6 +19,26 @@
   padding: 0.85rem 1rem;
 }
 
+@media (max-width: 700px) {
+  .panel-view {
+    padding: 0.75rem 0.75rem 1.5rem;
+  }
+
+  .panel-view-header h1 {
+    /* Title shown in the mobile top bar */
+    display: none;
+  }
+
+  .panel-view-header {
+    margin-bottom: 0.65rem;
+  }
+
+  .panel-view-header .muted {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+}
+
 .panel-view input,
 .panel-view select {
   height: var(--touch);

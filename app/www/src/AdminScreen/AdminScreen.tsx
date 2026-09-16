@@ -29,6 +29,7 @@ import {
   type StoreRecord
 } from '../schema';
 import '../styles/panel-view.css';
+import '../styles/fullscreen-modal.css';
 import './AdminScreen.css';
 
 type StaffRow = {
@@ -103,6 +104,8 @@ export function AdminScreen({
   const [linkRole, setLinkRole] = useState<StaffRole>('cashier');
   const [selectedStaffStoreId, setSelectedStaffStoreId] = useState('');
   const [paymentDraft, setPaymentDraft] = useState<Record<string, PaymentMethodToggles>>({});
+  const [productModal, setProductModal] = useState<null | 'add' | ProductRecord>(null);
+  const [categoryModal, setCategoryModal] = useState<null | 'add' | CategoryRecord>(null);
 
   const userId = connector.currentSession?.user?.id ?? '';
 
@@ -339,6 +342,7 @@ export function AdminScreen({
       });
       setMessage(`Updated ${name}`);
       clearProductDrafts(product.id);
+      setProductModal(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Update failed');
     } finally {
@@ -346,8 +350,8 @@ export function AdminScreen({
     }
   }
 
-  async function addProduct(e: React.FormEvent) {
-    e.preventDefault();
+  async function addProduct(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!hasStore) {
       setMessage('No store assignment found');
       return;
@@ -427,6 +431,7 @@ export function AdminScreen({
       setNewColor('red');
       setNewCategoryId('');
       setNewKgPerSack('25');
+      setProductModal(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Add product failed');
     } finally {
@@ -455,6 +460,7 @@ export function AdminScreen({
         delete next[category.id];
         return next;
       });
+      setCategoryModal(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Update category failed');
     } finally {
@@ -462,8 +468,8 @@ export function AdminScreen({
     }
   }
 
-  async function addCategory(e: React.FormEvent) {
-    e.preventDefault();
+  async function addCategory(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!hasStore) {
       setMessage('No store assignment found');
       return;
@@ -487,6 +493,7 @@ export function AdminScreen({
       );
       setMessage(`Added ${name}`);
       setNewCategoryName('');
+      setCategoryModal(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Add category failed');
     } finally {
@@ -512,6 +519,7 @@ export function AdminScreen({
         await tx.execute(`DELETE FROM ${CATEGORIES_TABLE} WHERE id = ?`, [category.id]);
       });
       setMessage(`Deleted ${category.name}`);
+      setCategoryModal(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Delete category failed');
     } finally {
@@ -633,6 +641,18 @@ export function AdminScreen({
     }
   }
 
+  useEffect(() => {
+    if (!productModal && !categoryModal) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setProductModal(null);
+        setCategoryModal(null);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [productModal, categoryModal]);
+
   const showInventory = section === 'all' || section === 'inventory';
   const showCategories = section === 'all' || section === 'categories';
   const showUsers = section === 'all' || section === 'users';
@@ -680,7 +700,7 @@ export function AdminScreen({
             <p className="muted">Rename categories or add new ones. Rice cannot be deleted.</p>
           )}
 
-          <div className="inventory-list">
+          <div className="inventory-list desktop-only">
             <div className="inventory-row inventory-head category-row" aria-hidden="true">
               <span className="inventory-name">Name</span>
               <span className="inventory-unit">Type</span>
@@ -726,6 +746,43 @@ export function AdminScreen({
             })}
           </div>
 
+          <div className="mobile-list mobile-only">
+            {categories.map((category) => {
+              const rice = isRiceCategory(category);
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  className="mobile-list-row"
+                  onClick={() => {
+                    setDraftCategoryName((prev) => ({
+                      ...prev,
+                      [category.id]: prev[category.id] ?? category.name ?? ''
+                    }));
+                    setCategoryModal(category);
+                  }}
+                >
+                  <span className="mobile-list-primary">{category.name}</span>
+                  <span className="mobile-list-meta">{rice ? 'Rice' : 'Custom'}</span>
+                  <span className="mobile-list-chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className="mobile-add-btn"
+              disabled={busy || !hasStore}
+              onClick={() => {
+                setNewCategoryName('');
+                setCategoryModal('add');
+              }}
+            >
+              Add category
+            </button>
+          </div>
+
           {categories.length === 0 && (
             <p className="muted">
               {categoriesLoading || !status.hasSynced
@@ -734,7 +791,7 @@ export function AdminScreen({
             </p>
           )}
 
-          <form className="admin-form" onSubmit={(e) => void addCategory(e)}>
+          <form className="admin-form desktop-only" onSubmit={(e) => void addCategory(e)}>
             <h3>Add category</h3>
             <div className="inventory-row inventory-add category-row">
               <input
@@ -762,7 +819,7 @@ export function AdminScreen({
             </p>
           )}
 
-          <div className="inventory-list">
+          <div className="inventory-list desktop-only">
             <div className="inventory-row inventory-head" aria-hidden="true">
               <span className="inventory-color" />
               <span className="inventory-name">Name</span>
@@ -894,13 +951,57 @@ export function AdminScreen({
             })}
           </div>
 
+          <div className="mobile-list mobile-only">
+            {products.map((product) => {
+              const colorVal =
+                draftColor[product.id] ?? (product.color as ProductColor | null) ?? 'red';
+              const priceLabel = `₱${((product.price_cents ?? 0) / 100).toFixed(2)}`;
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  className="mobile-list-row"
+                  onClick={() => setProductModal(product)}
+                >
+                  <span
+                    className="mobile-list-swatch"
+                    style={{ backgroundColor: productColorHex(colorVal) }}
+                    aria-hidden="true"
+                  />
+                  <span className="mobile-list-primary">{product.name}</span>
+                  <span className="mobile-list-meta">{priceLabel}</span>
+                  <span className="mobile-list-chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className="mobile-add-btn"
+              disabled={busy || !hasStore}
+              onClick={() => {
+                setNewName('');
+                setNewUnit('pc');
+                setNewPrice('');
+                setNewStockByStore({});
+                setNewColor('red');
+                setNewCategoryId('');
+                setNewKgPerSack('25');
+                setProductModal('add');
+              }}
+            >
+              Add product
+            </button>
+          </div>
+
           {products.length === 0 && (
             <p className="muted inventory-empty-state">
               {productsLoading || !status.hasSynced ? 'Loading products…' : 'No products yet. Add one below.'}
             </p>
           )}
 
-          <form className="admin-form" onSubmit={(e) => void addProduct(e)}>
+          <form className="admin-form desktop-only" onSubmit={(e) => void addProduct(e)}>
             <h3>Add product</h3>
             <div className="inventory-row inventory-add">
               <label
@@ -1072,7 +1173,7 @@ export function AdminScreen({
 
             {staffError && <p className="error">{staffError}</p>}
 
-            <div className="staff-table-wrap">
+            <div className="staff-table-wrap desktop-only">
               <table className="staff-table">
                 <thead>
                   <tr>
@@ -1118,9 +1219,44 @@ export function AdminScreen({
               )}
             </div>
 
+            <div className="mobile-list mobile-only staff-mobile-list">
+              {staff.map((row) => (
+                <div key={`${row.user_id}:${row.store_id}`} className="mobile-staff-row">
+                  <div className="mobile-staff-main">
+                    <code className="mobile-staff-id" title={row.user_id}>
+                      {row.user_id.slice(0, 8)}…
+                    </code>
+                    {row.user_id === userId ? <span className="muted"> (you)</span> : null}
+                  </div>
+                  <select
+                    className="mobile-staff-role"
+                    value={row.role === 'admin' ? 'admin' : 'cashier'}
+                    disabled={busy}
+                    aria-label={`Role for ${row.user_id}`}
+                    onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
+                  >
+                    <option value="cashier">cashier</option>
+                    <option value="admin">admin</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="mobile-staff-remove"
+                    disabled={busy || row.user_id === userId}
+                    onClick={() => void removeStaff(row)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              {staffLoading && <p className="muted">Loading staff…</p>}
+              {!staffLoading && staff.length === 0 && !staffError && (
+                <p className="muted">No staff linked to this location yet.</p>
+              )}
+            </div>
+
             <form className="admin-form admin-form-no-border" onSubmit={(e) => void linkStaff(e)}>
               <h3>Link Auth user</h3>
-              <div className="inventory-row inventory-add">
+              <div className="inventory-row inventory-add link-staff-row">
                 <input
                   className="inventory-name"
                   aria-label="User UUID"
@@ -1150,6 +1286,308 @@ export function AdminScreen({
           </section>
         </>
       )}
+
+      {productModal && (() => {
+        const isAdd = productModal === 'add';
+        const product = isAdd ? null : productModal;
+        const categoryId = product ? selectedCategoryId(product) : newCategoryId;
+        const category = categoryId ? categoriesById.get(categoryId) : undefined;
+        const rice = isRiceCategory(category);
+        const colorVal = product
+          ? (draftColor[product.id] ?? (product.color as ProductColor | null) ?? 'red')
+          : newColor;
+        const nameVal = product
+          ? (draftName[product.id] ?? product.name ?? '')
+          : newName;
+        const priceVal = product
+          ? (draftPrice[product.id] ?? String(((product.price_cents ?? 0) / 100).toFixed(2)))
+          : newPrice;
+        const kgPerSackVal = product ? selectedKgPerSack(product) : newKgPerSack;
+        const unitVal = product ? (product.unit ?? 'pc') : newUnit;
+
+        return (
+          <div
+            className="modal-overlay full-screen"
+            role="presentation"
+            onClick={() => setProductModal(null)}
+          >
+            <div
+              className="modal-card full-screen"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="product-modal-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <header className="modal-header">
+                <h2 id="product-modal-title" className="modal-title">
+                  {isAdd ? 'Add product' : 'Edit product'}
+                </h2>
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={() => setProductModal(null)}
+                >
+                  Close
+                </button>
+              </header>
+              <div className="modal-body">
+                <label className="modal-field">
+                  <span>Color</span>
+                  <div className="modal-color-row">
+                    <span
+                      className="modal-color-swatch"
+                      style={{ backgroundColor: productColorHex(colorVal) }}
+                    />
+                    <select
+                      aria-label="Product color"
+                      value={colorVal}
+                      onChange={(e) => {
+                        const next = e.target.value as ProductColor;
+                        if (product) {
+                          setDraftColor((prev) => ({ ...prev, [product.id]: next }));
+                        } else {
+                          setNewColor(next);
+                        }
+                      }}
+                    >
+                      {PRODUCT_COLORS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </label>
+                <label className="modal-field">
+                  <span>Name</span>
+                  <input
+                    value={nameVal}
+                    onChange={(e) => {
+                      if (product) {
+                        setDraftName((prev) => ({ ...prev, [product.id]: e.target.value }));
+                      } else {
+                        setNewName(e.target.value);
+                      }
+                    }}
+                  />
+                </label>
+                <label className="modal-field">
+                  <span>Category</span>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => {
+                      if (product) {
+                        setDraftCategory((prev) => ({ ...prev, [product.id]: e.target.value }));
+                      } else {
+                        setNewCategoryId(e.target.value);
+                      }
+                    }}
+                  >
+                    <option value="">None</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="modal-field">
+                  <span>{rice ? 'Price per kg (₱)' : 'Price (₱)'}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceVal}
+                    onChange={(e) => {
+                      if (product) {
+                        setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }));
+                      } else {
+                        setNewPrice(e.target.value);
+                      }
+                    }}
+                  />
+                </label>
+                {!rice && (
+                  <label className="modal-field">
+                    <span>Unit</span>
+                    {product ? (
+                      <input value={unitVal} readOnly />
+                    ) : (
+                      <input
+                        value={newUnit}
+                        onChange={(e) => setNewUnit(e.target.value)}
+                      />
+                    )}
+                  </label>
+                )}
+                {rice && (
+                  <label className="modal-field">
+                    <span>Kg per sack</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      placeholder="—"
+                      value={kgPerSackVal}
+                      onChange={(e) => {
+                        if (product) {
+                          setDraftKgPerSack((prev) => ({
+                            ...prev,
+                            [product.id]: e.target.value
+                          }));
+                        } else {
+                          setNewKgPerSack(e.target.value);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+                {inventoryStores.map((store) => (
+                  <label key={store.id} className="modal-field">
+                    <span>Stock · {store.name}{rice ? ' (kg)' : ''}</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="—"
+                      value={
+                        product
+                          ? stockValue(product.id, store.id)
+                          : (newStockByStore[store.id] ?? '')
+                      }
+                      onChange={(e) => {
+                        if (product) {
+                          setDraftStock((prev) => ({
+                            ...prev,
+                            [stockKey(product.id, store.id)]: e.target.value
+                          }));
+                        } else {
+                          setNewStockByStore((prev) => ({
+                            ...prev,
+                            [store.id]: e.target.value
+                          }));
+                        }
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+              <footer className="modal-footer">
+                <button
+                  type="button"
+                  className="modal-footer-cancel"
+                  onClick={() => setProductModal(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="modal-footer-primary"
+                  disabled={busy || (!product && !hasStore)}
+                  onClick={() => {
+                    if (product) void saveProduct(product);
+                    else void addProduct();
+                  }}
+                >
+                  {isAdd ? 'Add' : 'Save'}
+                </button>
+              </footer>
+            </div>
+          </div>
+        );
+      })()}
+
+      {categoryModal && (() => {
+        const isAdd = categoryModal === 'add';
+        const category = isAdd ? null : categoryModal;
+        const rice = category ? isRiceCategory(category) : false;
+        const nameVal = category
+          ? (draftCategoryName[category.id] ?? category.name ?? '')
+          : newCategoryName;
+
+        return (
+          <div
+            className="modal-overlay full-screen"
+            role="presentation"
+            onClick={() => setCategoryModal(null)}
+          >
+            <div
+              className="modal-card full-screen"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="category-modal-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <header className="modal-header">
+                <h2 id="category-modal-title" className="modal-title">
+                  {isAdd ? 'Add category' : 'Edit category'}
+                </h2>
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={() => setCategoryModal(null)}
+                >
+                  Close
+                </button>
+              </header>
+              <div className="modal-body">
+                <label className="modal-field">
+                  <span>Name</span>
+                  <input
+                    value={nameVal}
+                    onChange={(e) => {
+                      if (category) {
+                        setDraftCategoryName((prev) => ({
+                          ...prev,
+                          [category.id]: e.target.value
+                        }));
+                      } else {
+                        setNewCategoryName(e.target.value);
+                      }
+                    }}
+                  />
+                </label>
+                {!isAdd && (
+                  <p className="muted" style={{ margin: 0 }}>
+                    Type: {rice ? 'Rice (preset)' : 'Custom'}
+                  </p>
+                )}
+              </div>
+              <footer className="modal-footer">
+                {!isAdd && (
+                  <button
+                    type="button"
+                    className="modal-footer-danger"
+                    disabled={busy || rice}
+                    onClick={() => {
+                      if (category) void deleteCategory(category);
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="modal-footer-cancel"
+                  onClick={() => setCategoryModal(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="modal-footer-primary"
+                  disabled={busy || (isAdd && !hasStore)}
+                  onClick={() => {
+                    if (category) void saveCategory(category);
+                    else void addCategory();
+                  }}
+                >
+                  {isAdd ? 'Add' : 'Save'}
+                </button>
+              </footer>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

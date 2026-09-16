@@ -55,6 +55,34 @@
   font: inherit;
   cursor: pointer;
   text-align: left;
+  min-width: 0;
+}
+
+.sales-expand-primary,
+.sales-expand-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sales-expand-primary {
+  flex: 1 1 auto;
+}
+
+.sales-expand-meta {
+  flex-shrink: 0;
+}
+
+.sales-amount {
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.sales-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sales-expand:hover {
@@ -129,4 +157,44 @@
 .sales-pagination button[aria-current='page'] {
   background: #000000;
   color: #ffffff;
+}
+
+.sales-delete-in-expand {
+  display: none;
+  width: 100%;
+  margin-top: 0.65rem;
+  border-left: none;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 700px) {
+  .sales-admin-actions .sales-danger-btn {
+    width: 100%;
+  }
+
+  .sales-expand {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .sales-expand-primary,
+  .sales-expand-meta {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .sales-expand-meta {
+    flex-shrink: 1;
+  }
+
+  .sales-expand-meta .muted {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sales-delete-in-expand.mobile-only {
+    display: block;
+  }
 }

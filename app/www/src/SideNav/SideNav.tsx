@@ -99,27 +99,39 @@ const ICONS: Record<AppView, () => React.ReactNode> = {
   users: IconUsers
 };
 
+export const VIEW_LABELS: Record<AppView, string> = {
+  cashier: 'Cashier',
+  sales: 'Sales',
+  inventory: 'Inventory',
+  categories: 'Categories',
+  users: 'Users'
+};
+
 export function SideNav({
   view,
   isAdmin,
   collapsed,
+  mobileOpen,
   connected,
   hasSynced,
   email,
   signingOut,
   onNavigate,
   onToggle,
+  onCloseMobile,
   onSignOut
 }: {
   view: AppView;
   isAdmin: boolean;
   collapsed: boolean;
+  mobileOpen: boolean;
   connected: boolean;
   hasSynced: boolean;
   email?: string;
   signingOut: boolean;
   onNavigate: (view: AppView) => void;
   onToggle: () => void;
+  onCloseMobile: () => void;
   onSignOut: () => void;
 }) {
   const items = NAV_ITEMS.filter((item) => {
@@ -130,17 +142,27 @@ export function SideNav({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const titleId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const showLabels = !collapsed || mobileOpen;
 
   useEffect(() => {
-    if (!confirmOpen) return;
-    cancelRef.current?.focus();
+    if (!confirmOpen && !mobileOpen) return;
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setConfirmOpen(false);
+      if (e.key !== 'Escape') return;
+      if (confirmOpen) {
+        setConfirmOpen(false);
+        return;
+      }
+      if (mobileOpen) onCloseMobile();
     }
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+  }, [confirmOpen, mobileOpen, onCloseMobile]);
+
+  useEffect(() => {
+    if (!confirmOpen) return;
+    cancelRef.current?.focus();
   }, [confirmOpen]);
 
   function requestSignOut() {
@@ -153,100 +175,138 @@ export function SideNav({
     onSignOut();
   }
 
+  function handleNavigate(next: AppView) {
+    onNavigate(next);
+    onCloseMobile();
+  }
+
   return (
     <>
-    <aside className={`side-nav ${collapsed ? 'collapsed' : ''}`}>
-      <div className="side-nav-top">
-        <button
-          type="button"
-          className="side-nav-toggle"
-          onClick={onToggle}
-          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          <IconMenu />
-        </button>
-        {!collapsed && <span className="side-nav-brand">aqeela-pos</span>}
-      </div>
-
-      <nav className="side-nav-links" aria-label="Main">
-        {items.map((item) => {
-          const Icon = ICONS[item.id];
-          const active = view === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={`side-nav-link ${active ? 'active' : ''}`}
-              onClick={() => onNavigate(item.id)}
-              title={item.label}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon />
-              {!collapsed && <span>{item.label}</span>}
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="side-nav-footer">
-        <div className={`side-nav-status ${connected && hasSynced ? 'ok' : 'warn'}`} title={connected ? (hasSynced ? 'Synced' : 'Syncing…') : 'Offline / connecting'}>
-          <span className="side-nav-dot" />
-          {!collapsed && (
-            <span>{connected ? (hasSynced ? 'Synced' : 'Syncing…') : navigator.onLine ? 'Connecting…' : 'Offline'}</span>
-          )}
-        </div>
-        {!collapsed && email && <p className="side-nav-email" title={email}>{email}</p>}
-        <button
-          type="button"
-          className="side-nav-link"
-          disabled={signingOut}
-          onClick={requestSignOut}
-          title="Sign out"
-        >
-          <IconSignOut />
-          {!collapsed && <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>}
-        </button>
-      </div>
-    </aside>
-
-    {confirmOpen && (
-      <div
-        className="modal-backdrop"
-        role="presentation"
-        onClick={() => setConfirmOpen(false)}
-      >
+      {mobileOpen && (
         <div
-          className="modal"
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          onClick={(e) => e.stopPropagation()}
+          className="side-nav-backdrop"
+          role="presentation"
+          onClick={onCloseMobile}
+        />
+      )}
+      <aside
+        className={`side-nav ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
+      >
+        <div className="side-nav-top">
+          <button
+            type="button"
+            className="side-nav-toggle side-nav-toggle-desktop"
+            onClick={onToggle}
+            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            title={collapsed ? 'Expand' : 'Collapse'}
+          >
+            <IconMenu />
+          </button>
+          <button
+            type="button"
+            className="side-nav-toggle side-nav-toggle-mobile"
+            onClick={onCloseMobile}
+            aria-label="Close navigation"
+            title="Close"
+          >
+            <IconMenu />
+          </button>
+          {showLabels && <span className="side-nav-brand">aqeela-pos</span>}
+        </div>
+
+        <nav className="side-nav-links" aria-label="Main">
+          {items.map((item) => {
+            const Icon = ICONS[item.id];
+            const active = view === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`side-nav-link ${active ? 'active' : ''}`}
+                onClick={() => handleNavigate(item.id)}
+                title={item.label}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon />
+                {showLabels && <span>{item.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="side-nav-footer">
+          <div
+            className={`side-nav-status ${connected && hasSynced ? 'ok' : 'warn'}`}
+            title={connected ? (hasSynced ? 'Synced' : 'Syncing…') : 'Offline / connecting'}
+          >
+            <span className="side-nav-dot" />
+            {showLabels && (
+              <span>
+                {connected
+                  ? hasSynced
+                    ? 'Synced'
+                    : 'Syncing…'
+                  : navigator.onLine
+                    ? 'Connecting…'
+                    : 'Offline'}
+              </span>
+            )}
+          </div>
+          {showLabels && email && (
+            <p className="side-nav-email" title={email}>
+              {email}
+            </p>
+          )}
+          <button
+            type="button"
+            className="side-nav-link"
+            disabled={signingOut}
+            onClick={requestSignOut}
+            title="Sign out"
+          >
+            <IconSignOut />
+            {showLabels && <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>}
+          </button>
+        </div>
+      </aside>
+
+      {confirmOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => setConfirmOpen(false)}
         >
-          <p id={titleId} className="modal-message">
-            Are you sure you want to log out?
-          </p>
-          <div className="modal-actions">
-            <button
-              ref={cancelRef}
-              type="button"
-              className="modal-cancel"
-              onClick={() => setConfirmOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="modal-confirm"
-              disabled={signingOut}
-              onClick={confirmSignOut}
-            >
-              Log out
-            </button>
+          <div
+            className="modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p id={titleId} className="modal-message">
+              Are you sure you want to log out?
+            </p>
+            <div className="modal-actions">
+              <button
+                ref={cancelRef}
+                type="button"
+                className="modal-cancel"
+                onClick={() => setConfirmOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="modal-confirm"
+                disabled={signingOut}
+                onClick={confirmSignOut}
+              >
+                Log out
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </>
   );
 }
