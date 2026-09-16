@@ -63,9 +63,19 @@ export function paymentMethodLabel(method: string) {
   return method;
 }
 
+/** PowerSync SQLite may store Postgres booleans as 0/1, true/false, or omit until synced. */
+export function isStoreEnabled(store: { enabled?: number | boolean | null }) {
+  const value = store.enabled;
+  if (value == null) return true;
+  if (typeof value === 'boolean') return value;
+  return value !== 0;
+}
+
 const stores = new Table({
   name: column.text,
   payment_methods: column.text,
+  // Postgres boolean → SQLite integer (0/1) via PowerSync
+  enabled: column.integer,
   created_at: column.text
 });
 

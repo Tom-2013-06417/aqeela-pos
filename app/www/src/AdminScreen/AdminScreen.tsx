@@ -16,6 +16,7 @@ import {
   STORES_TABLE,
   STORE_STAFF_TABLE,
   isRiceCategory,
+  isStoreEnabled,
   newInventoryLevelId,
   parsePaymentMethods,
   paymentMethodLabel,
@@ -116,6 +117,11 @@ export function AdminScreen({
 
   const { data: stores = [] } = useQuery<StoreRecord>(
     `SELECT * FROM ${STORES_TABLE} ORDER BY name ASC`
+  );
+
+  const inventoryStores = useMemo(
+    () => stores.filter((store) => isStoreEnabled(store)),
+    [stores]
   );
 
   const staffStoreId = selectedStaffStoreId || stores[0]?.id || '';
@@ -235,7 +241,7 @@ export function AdminScreen({
     });
     setDraftStock((prev) => {
       const next = { ...prev };
-      for (const store of stores) {
+      for (const store of inventoryStores) {
         delete next[stockKey(productId, store.id)];
       }
       return next;
@@ -262,7 +268,7 @@ export function AdminScreen({
     }
 
     const locationQtys: { storeId: string; qty: number | null; level?: InventoryLevelRecord }[] = [];
-    for (const store of stores) {
+    for (const store of inventoryStores) {
       const raw = stockValue(product.id, store.id).trim();
       const level = levelsByKey.get(stockKey(product.id, store.id));
       if (raw === '') {
@@ -363,7 +369,7 @@ export function AdminScreen({
     }
 
     const locationQtys: { storeId: string; qty: number }[] = [];
-    for (const store of stores) {
+    for (const store of inventoryStores) {
       const raw = (newStockByStore[store.id] ?? '').trim();
       if (raw === '') continue;
       const qty = Number(raw);
@@ -762,7 +768,7 @@ export function AdminScreen({
               <span className="inventory-name">Name</span>
               <span className="inventory-category">Category</span>
               <span className="inventory-price">Price (₱)</span>
-              {stores.map((store) => (
+              {inventoryStores.map((store) => (
                 <span key={store.id} className="inventory-stock" title={store.name ?? undefined}>
                   {store.name}
                 </span>
@@ -838,7 +844,7 @@ export function AdminScreen({
                     value={priceVal}
                     onChange={(e) => setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }))}
                   />
-                  {stores.map((store) => (
+                  {inventoryStores.map((store) => (
                     <input
                       key={store.id}
                       className="inventory-stock"
@@ -947,7 +953,7 @@ export function AdminScreen({
                 onChange={(e) => setNewPrice(e.target.value)}
                 required
               />
-              {stores.map((store) => (
+              {inventoryStores.map((store) => (
                 <input
                   key={store.id}
                   className="inventory-stock"
