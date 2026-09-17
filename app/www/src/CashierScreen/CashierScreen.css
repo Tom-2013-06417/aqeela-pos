@@ -599,4 +599,46 @@
   .cashier-pay-actions button {
     min-height: 3.25rem;
   }
+
+  /* Order sheet: keep qty ± fully visible (aside was clipping the +) */
+  .cashier-order.sheet-open .order-line {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    overflow: visible;
+  }
+
+  .cashier-order.sheet-open .order-line-main {
+    flex: 1 1 auto;
+  }
+
+  .cashier-order.sheet-open .order-line-main .rice-qty.compact {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .cashier-order.sheet-open .order-line-aside {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cashier-order.sheet-open .order-line-aside .qty-control.compact {
+    flex: 1 1 auto;
+    max-width: 12rem;
+    min-width: 0;
+    --qty-touch: 2.75rem;
+  }
+
+  .cashier-order.sheet-open .order-line-aside .qty-control.compact .qty-value {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .cashier-order.sheet-open .order-line-aside .qty-btn {
+    flex-shrink: 0;
+  }
 }
