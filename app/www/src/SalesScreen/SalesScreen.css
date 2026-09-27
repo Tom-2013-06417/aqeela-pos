@@ -131,6 +131,10 @@
   border-bottom: none;
 }
 
+.sales-lines ul.sales-payments {
+  margin-top: 0.5rem;
+}
+
 .sales-pagination {
   display: flex;
   flex-wrap: wrap;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
 import { CashPaymentModal } from '../CashPaymentModal/CashPaymentModal';
 import { PaymentConfirmModal } from '../PaymentConfirmModal/PaymentConfirmModal';
+import { SplitPaymentModal } from '../SplitPaymentModal/SplitPaymentModal';
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
@@ -12,6 +13,7 @@ import {
   INVENTORY_LEVELS_TABLE,
   PRODUCTS_TABLE,
   SALE_LINES_TABLE,
+  SALE_PAYMENTS_TABLE,
   SALES_TABLE,
   STORES_TABLE,
   STORE_STAFF_TABLE,
@@ -20,7 +22,8 @@ import {
   paymentMethodLabel,
   type CategoryRecord,
   type PaymentMethod,
-  type ProductRecord
+  type ProductRecord,
+  type Tender
 } from '../schema';
 import './CashierScreen.css';
 
@@ -60,6 +63,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [busy, setBusy] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
   const [pendingMethod, setPendingMethod] = useState<Exclude<PaymentMethod, 'cash'> | null>(null);
+  const [showSplitModal, setShowSplitModal] = useState(false);
   const [orderSheetOpen, setOrderSheetOpen] = useState(false);
 
   useEffect(() => {
@@ -204,14 +208,20 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     setQty(product, n);
   }
 
-  async function placeOrder(paymentMethod: PaymentMethod) {
+  async function placeOrder(tenders: Tender[]) {
     if (cartLines.length === 0) {
       setMessage('Add items to the order first');
       return;
     }
 
-    if (!paymentToggles[paymentMethod]) {
-      setMessage(`${paymentMethodLabel(paymentMethod)} is not enabled for this location`);
+    if (tenders.length === 0) {
+      setMessage('Add a payment first');
+      return;
+    }
+
+    const disabledTender = tenders.find((tender) => !paymentToggles[tender.method]);
+    if (disabledTender) {
+      setMessage(`${paymentMethodLabel(disabledTender.method)} is not enabled for this location`);
       return;
     }
 
@@ -245,11 +255,19 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         0
       );
 
+      const paidCents = tenders.reduce((sum, tender) => sum + tender.amountCents, 0);
+      if (paidCents !== total) {
+        throw new Error(`Payments (${formatMoney(paidCents)}) do not match the total (${formatMoney(total)})`);
+      }
+
+      const methods = new Set(tenders.map((tender) => tender.method));
+      const saleMethod = methods.size === 1 ? tenders[0].method : 'split';
+
       await db.writeTransaction(async (tx) => {
         await tx.execute(
           `INSERT INTO ${SALES_TABLE} (id, store_id, cashier_id, total_cents, payment_method, created_at)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [saleId, storeId, session.user.id, total, paymentMethod, now]
+          [saleId, storeId, session.user.id, total, saleMethod, now]
         );
 
         for (const line of cartLines) {
@@ -268,9 +286,26 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
             [newStock, line.product.inventory_level_id]
           );
         }
+
+        // Zero-amount tenders (e.g. a free order) have no server row: amount_cents must be > 0.
+        for (const tender of tenders) {
+          if (tender.amountCents <= 0) continue;
+          await tx.execute(
+            `INSERT INTO ${SALE_PAYMENTS_TABLE} (id, sale_id, method, amount_cents, tendered_cents, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+              crypto.randomUUID(),
+              saleId,
+              tender.method,
+              tender.amountCents,
+              tender.tenderedCents ?? null,
+              now
+            ]
+          );
+        }
       });
 
-      setMessage(`Order placed (${paymentMethodLabel(paymentMethod)}) — ${formatMoney(total)}`);
+      setMessage(`Order placed (${paymentMethodLabel(saleMethod)}) — ${formatMoney(total)}`);
       setCartQty({});
       setDraftQtyInput({});
       setOrderSheetOpen(false);
@@ -299,16 +334,30 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     setPendingMethod(method);
   }
 
-  async function confirmCashPayment() {
+  function openSplitModal() {
+    if (cartLines.length === 0) {
+      setMessage('Add items to the order first');
+      return;
+    }
+    setMessage(null);
+    setShowSplitModal(true);
+  }
+
+  async function confirmCashPayment(tenderedCents: number) {
     setShowCashModal(false);
-    await placeOrder('cash');
+    await placeOrder([{ method: 'cash', amountCents: totalCents, tenderedCents }]);
   }
 
   async function confirmPendingPayment() {
     if (!pendingMethod) return;
     const method = pendingMethod;
     setPendingMethod(null);
-    await placeOrder(method);
+    await placeOrder([{ method, amountCents: totalCents }]);
+  }
+
+  async function confirmSplitPayment(tenders: Tender[]) {
+    setShowSplitModal(false);
+    await placeOrder(tenders);
   }
 
   function renderPieceQty(product: CatalogProduct, qty: number, compact = false) {
@@ -606,6 +655,16 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 Card
               </button>
             )}
+            {enabledMethods.length >= 2 && (
+              <button
+                type="button"
+                className="pay-split"
+                disabled={busy || cartLines.length === 0}
+                onClick={openSplitModal}
+              >
+                Split
+              </button>
+            )}
           </div>
         </footer>
       </aside>
@@ -639,7 +698,17 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           totalCents={totalCents}
           busy={busy}
           onCancel={() => setShowCashModal(false)}
-          onConfirm={() => void confirmCashPayment()}
+          onConfirm={(tenderedCents) => void confirmCashPayment(tenderedCents)}
+        />
+      )}
+
+      {showSplitModal && (
+        <SplitPaymentModal
+          methods={enabledMethods}
+          totalCents={totalCents}
+          busy={busy}
+          onCancel={() => setShowSplitModal(false)}
+          onConfirm={(tenders) => void confirmSplitPayment(tenders)}
         />
       )}
 

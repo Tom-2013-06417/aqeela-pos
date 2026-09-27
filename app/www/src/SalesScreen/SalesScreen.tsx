@@ -4,6 +4,7 @@ import {
   PRODUCTS_TABLE,
   SALES_TABLE,
   SALE_LINES_TABLE,
+  SALE_PAYMENTS_TABLE,
   STORES_TABLE,
   paymentMethodLabel
 } from '../schema';
@@ -14,6 +15,13 @@ import '../styles/fullscreen-modal.css';
 import './SalesScreen.css';
 
 const PAGE_SIZE = 50;
+
+type SalePayment = {
+  sale_id: string;
+  method: string;
+  amount_cents: number;
+  tendered_cents: number | null;
+};
 
 function formatMoney(cents: number) {
   return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
@@ -90,6 +98,23 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     return map;
   }, [saleLines]);
 
+  const { data: salePayments = [] } = useQuery<SalePayment>(
+    `SELECT sale_id, method, amount_cents, tendered_cents FROM ${SALE_PAYMENTS_TABLE}`
+  );
+
+  const paymentsBySaleId = useMemo(() => {
+    const map = new Map<string, SalePayment[]>();
+    for (const payment of salePayments) {
+      const existing = map.get(payment.sale_id);
+      if (existing) {
+        existing.push(payment);
+      } else {
+        map.set(payment.sale_id, [payment]);
+      }
+    }
+    return map;
+  }, [salePayments]);
+
   function toggleSaleExpanded(saleId: string) {
     setExpandedSaleIds((prev) => ({
       ...prev,
@@ -103,6 +128,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     setMessage(null);
     try {
       await db.writeTransaction(async (tx) => {
+        await tx.execute(`DELETE FROM ${SALE_PAYMENTS_TABLE} WHERE sale_id = ?`, [saleId]);
         await tx.execute(`DELETE FROM ${SALE_LINES_TABLE} WHERE sale_id = ?`, [saleId]);
         await tx.execute(`DELETE FROM ${SALES_TABLE} WHERE id = ?`, [saleId]);
       });
@@ -125,6 +151,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     setMessage(null);
     try {
       await db.writeTransaction(async (tx) => {
+        await tx.execute(`DELETE FROM ${SALE_PAYMENTS_TABLE}`);
         await tx.execute(`DELETE FROM ${SALE_LINES_TABLE}`);
         await tx.execute(`DELETE FROM ${SALES_TABLE}`);
       });
@@ -164,6 +191,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
           {sales.map((sale) => {
             const isExpanded = expandedSaleIds[sale.id] === true;
             const lines = linesBySaleId.get(sale.id) ?? [];
+            const payments = paymentsBySaleId.get(sale.id) ?? [];
             return (
               <li key={sale.id} className="sales-item">
                 <div className="sales-row">
@@ -217,6 +245,25 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                               {line.product_name ?? 'Unknown item'} × {formatQty(line.qty)}
                             </span>
                             <span>{formatMoney(line.line_total_cents ?? 0)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {payments.length > 0 && (
+                      <ul className="sales-payments">
+                        {payments.map((payment, index) => (
+                          <li key={`${sale.id}:payment:${index}`}>
+                            <span>
+                              {paymentMethodLabel(payment.method)}
+                              {payment.tendered_cents != null &&
+                                payment.tendered_cents !== payment.amount_cents && (
+                                  <span className="muted">
+                                    {' '}
+                                    (received {formatMoney(payment.tendered_cents)})
+                                  </span>
+                                )}
+                            </span>
+                            <span>{formatMoney(payment.amount_cents)}</span>
                           </li>
                         ))}
                       </ul>

@@ -14,7 +14,7 @@ export function CashPaymentModal({
   totalCents: number;
   busy: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (tenderedCents: number) => void;
 }) {
   const [cashInput, setCashInput] = useState('');
 
@@ -31,7 +31,7 @@ export function CashPaymentModal({
 
   function confirm() {
     if (!cashSufficient || busy) return;
-    onConfirm();
+    onConfirm(tenderedCents);
   }
 
   return (

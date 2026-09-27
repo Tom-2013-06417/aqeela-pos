@@ -7,9 +7,17 @@ export const PRODUCTS_TABLE = 'products';
 export const INVENTORY_LEVELS_TABLE = 'inventory_levels';
 export const SALES_TABLE = 'sales';
 export const SALE_LINES_TABLE = 'sale_lines';
+export const SALE_PAYMENTS_TABLE = 'sale_payments';
 
 export const PAYMENT_METHODS = ['cash', 'gcash', 'paymongo_qr', 'card'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** amountCents is applied to the bill; tenderedCents is cash handed over (change = tendered - amount). */
+export type Tender = {
+  method: PaymentMethod;
+  amountCents: number;
+  tenderedCents?: number;
+};
 
 export type PaymentMethodToggles = Record<PaymentMethod, boolean>;
 
@@ -63,6 +71,7 @@ export function paymentMethodLabel(method: string) {
   if (method === 'gcash') return 'GCash';
   if (method === 'cash') return 'Cash';
   if (method === 'card') return 'Card';
+  if (method === 'split') return 'Split';
   return method;
 }
 
@@ -143,6 +152,17 @@ const saleLines = new Table(
   { indexes: { sale: ['sale_id'] } }
 );
 
+const salePayments = new Table(
+  {
+    sale_id: column.text,
+    method: column.text,
+    amount_cents: column.integer,
+    tendered_cents: column.integer,
+    created_at: column.text
+  },
+  { indexes: { sale: ['sale_id'] } }
+);
+
 export const AppSchema = new Schema({
   stores,
   store_staff: storeStaff,
@@ -150,7 +170,8 @@ export const AppSchema = new Schema({
   products,
   inventory_levels: inventoryLevels,
   sales,
-  sale_lines: saleLines
+  sale_lines: saleLines,
+  sale_payments: salePayments
 });
 
 export type Database = (typeof AppSchema)['types'];

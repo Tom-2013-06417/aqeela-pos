@@ -396,14 +396,16 @@
 
 .cashier-pay-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
 .pay-cash,
 .pay-gcash,
 .pay-paymongo,
-.pay-card {
-  flex: 1;
+.pay-card,
+.pay-split {
+  flex: 1 1 6rem;
   min-height: var(--pay-height);
   font-weight: 700;
   font-size: 1.05rem;
@@ -435,6 +437,12 @@
   border: 1px solid #000000;
 }
 
+.pay-split {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+}
+
 .pay-cash:hover:not(:disabled) {
   background: #222222;
 }
@@ -449,6 +457,10 @@
 
 .pay-card:hover:not(:disabled) {
   background: #4a126c;
+}
+
+.pay-split:hover:not(:disabled) {
+  background: #eeeeee;
 }
 
 @media (max-width: 700px) {
