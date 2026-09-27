@@ -49,7 +49,7 @@ type CartLine = {
   qty: number;
 };
 
-const PAYMENT_METHOD_BUTTONS: PaymentMethod[] = ['cash', 'gcash', 'paymongo_qr'];
+const PAYMENT_METHOD_BUTTONS: PaymentMethod[] = ['cash', 'gcash', 'paymongo_qr', 'card'];
 
 export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const status = useStatus();
@@ -594,6 +594,16 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 onClick={() => openPaymentConfirm('paymongo_qr')}
               >
                 Paymongo QR
+              </button>
+            )}
+            {enabledMethods.includes('card') && (
+              <button
+                type="button"
+                className="pay-card"
+                disabled={busy || cartLines.length === 0}
+                onClick={() => openPaymentConfirm('card')}
+              >
+                Card
               </button>
             )}
           </div>

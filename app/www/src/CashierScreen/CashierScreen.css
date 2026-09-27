@@ -401,7 +401,8 @@
 
 .pay-cash,
 .pay-gcash,
-.pay-paymongo {
+.pay-paymongo,
+.pay-card {
   flex: 1;
   min-height: var(--pay-height);
   font-weight: 700;
@@ -428,6 +429,12 @@
   border: 1px solid #000000;
 }
 
+.pay-card {
+  background: #6a1b9a;
+  color: #ffffff;
+  border: 1px solid #000000;
+}
+
 .pay-cash:hover:not(:disabled) {
   background: #222222;
 }
@@ -438,6 +445,10 @@
 
 .pay-paymongo:hover:not(:disabled) {
   background: #004f47;
+}
+
+.pay-card:hover:not(:disabled) {
+  background: #4a126c;
 }
 
 @media (max-width: 700px) {

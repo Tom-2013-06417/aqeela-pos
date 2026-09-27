@@ -8,7 +8,7 @@ export const INVENTORY_LEVELS_TABLE = 'inventory_levels';
 export const SALES_TABLE = 'sales';
 export const SALE_LINES_TABLE = 'sale_lines';
 
-export const PAYMENT_METHODS = ['cash', 'gcash', 'paymongo_qr'] as const;
+export const PAYMENT_METHODS = ['cash', 'gcash', 'paymongo_qr', 'card'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export type PaymentMethodToggles = Record<PaymentMethod, boolean>;
@@ -16,7 +16,8 @@ export type PaymentMethodToggles = Record<PaymentMethod, boolean>;
 const DEFAULT_PAYMENT_METHODS: PaymentMethodToggles = {
   cash: true,
   gcash: true,
-  paymongo_qr: false
+  paymongo_qr: false,
+  card: false
 };
 
 function unwrapJsonObject(raw: unknown): Record<string, unknown> | null {
@@ -48,7 +49,8 @@ export function parsePaymentMethods(raw: unknown): PaymentMethodToggles {
   return {
     cash: parsed.cash === true,
     gcash: parsed.gcash === true,
-    paymongo_qr: parsed.paymongo_qr === true
+    paymongo_qr: parsed.paymongo_qr === true,
+    card: parsed.card === true
   };
 }
 
@@ -60,6 +62,7 @@ export function paymentMethodLabel(method: string) {
   if (method === 'paymongo_qr') return 'Paymongo QR';
   if (method === 'gcash') return 'GCash';
   if (method === 'cash') return 'Cash';
+  if (method === 'card') return 'Card';
   return method;
 }
 
