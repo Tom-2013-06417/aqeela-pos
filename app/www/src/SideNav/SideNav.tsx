@@ -6,15 +6,19 @@ export type AppView = 'cashier' | 'sales' | 'inventory' | 'categories' | 'users'
 type NavItem = {
   id: AppView;
   label: string;
+  /** Inventory + Categories: admin or inventory_manager */
+  inventoryAccess?: boolean;
+  /** Users + payment methods: admin only */
   adminOnly?: boolean;
+  /** Cashier register: cashiers only */
   cashierOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'cashier', label: 'Cashier', cashierOnly: true },
   { id: 'sales', label: 'Sales' },
-  { id: 'inventory', label: 'Inventory', adminOnly: true },
-  { id: 'categories', label: 'Categories', adminOnly: true },
+  { id: 'inventory', label: 'Inventory', inventoryAccess: true },
+  { id: 'categories', label: 'Categories', inventoryAccess: true },
   { id: 'users', label: 'Users', adminOnly: true }
 ];
 
@@ -110,6 +114,8 @@ export const VIEW_LABELS: Record<AppView, string> = {
 export function SideNav({
   view,
   isAdmin,
+  canManageInventory,
+  canUseCashier,
   collapsed,
   mobileOpen,
   connected,
@@ -123,6 +129,8 @@ export function SideNav({
 }: {
   view: AppView;
   isAdmin: boolean;
+  canManageInventory: boolean;
+  canUseCashier: boolean;
   collapsed: boolean;
   mobileOpen: boolean;
   connected: boolean;
@@ -136,7 +144,8 @@ export function SideNav({
 }) {
   const items = NAV_ITEMS.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
-    if (item.cashierOnly && isAdmin) return false;
+    if (item.inventoryAccess && !canManageInventory) return false;
+    if (item.cashierOnly && !canUseCashier) return false;
     return true;
   });
   const [confirmOpen, setConfirmOpen] = useState(false);

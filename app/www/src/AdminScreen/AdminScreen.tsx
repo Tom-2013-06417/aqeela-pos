@@ -19,6 +19,7 @@ import {
   isStoreEnabled,
   newInventoryLevelId,
   parsePaymentMethods,
+  parseStaffRole,
   paymentMethodLabel,
   serializePaymentMethods,
   type CategoryRecord,
@@ -26,6 +27,7 @@ import {
   type PaymentMethod,
   type PaymentMethodToggles,
   type ProductRecord,
+  type StaffRole,
   type StoreRecord
 } from '../schema';
 import '../styles/panel-view.css';
@@ -39,7 +41,6 @@ type StaffRow = {
   created_at: string;
 };
 
-type StaffRole = 'cashier' | 'admin';
 
 function categoryByIdMap(categories: CategoryRecord[]) {
   const map = new Map<string, CategoryRecord>();
@@ -1191,11 +1192,12 @@ export function AdminScreen({
                       </td>
                       <td>
                         <select
-                          value={row.role === 'admin' ? 'admin' : 'cashier'}
+                          value={parseStaffRole(row.role)}
                           disabled={busy}
                           onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
                         >
                           <option value="cashier">cashier</option>
+                          <option value="inventory_manager">inventory</option>
                           <option value="admin">admin</option>
                         </select>
                       </td>
@@ -1230,12 +1232,13 @@ export function AdminScreen({
                   </div>
                   <select
                     className="mobile-staff-role"
-                    value={row.role === 'admin' ? 'admin' : 'cashier'}
+                    value={parseStaffRole(row.role)}
                     disabled={busy}
                     aria-label={`Role for ${row.user_id}`}
                     onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
                   >
                     <option value="cashier">cashier</option>
+                    <option value="inventory_manager">inventory</option>
                     <option value="admin">admin</option>
                   </select>
                   <button
@@ -1272,6 +1275,7 @@ export function AdminScreen({
                   onChange={(e) => setLinkRole(e.target.value as StaffRole)}
                 >
                   <option value="cashier">cashier</option>
+                  <option value="inventory_manager">inventory</option>
                   <option value="admin">admin</option>
                 </select>
                 <button

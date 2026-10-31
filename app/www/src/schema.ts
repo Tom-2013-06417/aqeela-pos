@@ -12,6 +12,38 @@ export const SALE_PAYMENTS_TABLE = 'sale_payments';
 export const PAYMENT_METHODS = ['cash', 'gcash', 'paymongo_qr', 'card'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+export const STAFF_ROLES = ['cashier', 'inventory_manager', 'admin'] as const;
+export type StaffRole = (typeof STAFF_ROLES)[number];
+
+export function parseStaffRole(role: string | null | undefined): StaffRole {
+  if (role === 'admin' || role === 'inventory_manager' || role === 'cashier') return role;
+  return 'cashier';
+}
+
+/** Highest privilege across store assignments: admin > inventory_manager > cashier. */
+export function resolveStaffAccess(roles: Iterable<string>): {
+  isAdmin: boolean;
+  canManageInventory: boolean;
+  canUseCashier: boolean;
+} {
+  let isAdmin = false;
+  let canManageInventory = false;
+  for (const role of roles) {
+    if (role === 'admin') {
+      isAdmin = true;
+      canManageInventory = true;
+    } else if (role === 'inventory_manager') {
+      canManageInventory = true;
+    }
+  }
+  return {
+    isAdmin,
+    canManageInventory,
+    // Admins and inventory managers stay off the register.
+    canUseCashier: !isAdmin && !canManageInventory
+  };
+}
+
 /** amountCents is applied to the bill; tenderedCents is cash handed over (change = tendered - amount). */
 export type Tender = {
   method: PaymentMethod;

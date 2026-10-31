@@ -8,7 +8,7 @@ import { PwaBanner } from '../PwaBanner/PwaBanner';
 import { db } from '../powerSync';
 import { SalesScreen } from '../SalesScreen/SalesScreen';
 import { SideNav, VIEW_LABELS, type AppView } from '../SideNav/SideNav';
-import { STORE_STAFF_TABLE } from '../schema';
+import { resolveStaffAccess, STORE_STAFF_TABLE } from '../schema';
 import './App.css';
 
 function IconMenu() {
@@ -150,21 +150,27 @@ function AuthedApp({
     userId ? [userId] : []
   );
 
-  const isAdmin = staffRows.some((row) => row.role === 'admin');
+  const { isAdmin, canManageInventory, canUseCashier } = resolveStaffAccess(
+    staffRows.map((row) => row.role)
+  );
   const [view, setView] = useState<AppView>('sales');
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin && (view === 'inventory' || view === 'categories' || view === 'users')) {
-      setView('cashier');
+    if (view === 'users' && !isAdmin) {
+      setView(canManageInventory ? 'inventory' : canUseCashier ? 'cashier' : 'sales');
       return;
     }
-    if (isAdmin && view === 'cashier') {
-      setView('sales');
+    if ((view === 'inventory' || view === 'categories') && !canManageInventory) {
+      setView(canUseCashier ? 'cashier' : 'sales');
+      return;
     }
-  }, [isAdmin, view]);
+    if (view === 'cashier' && !canUseCashier) {
+      setView(canManageInventory ? 'inventory' : 'sales');
+    }
+  }, [isAdmin, canManageInventory, canUseCashier, view]);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -193,6 +199,8 @@ function AuthedApp({
       <SideNav
         view={view}
         isAdmin={isAdmin}
+        canManageInventory={canManageInventory}
+        canUseCashier={canUseCashier}
         collapsed={navCollapsed}
         mobileOpen={mobileNavOpen}
         connected={status.connected}
@@ -227,10 +235,14 @@ function AuthedApp({
         </header>
 
         <main className="pos-main">
-          {view === 'cashier' && <CashierScreen connector={connector} />}
+          {view === 'cashier' && canUseCashier && <CashierScreen connector={connector} />}
           {view === 'sales' && <SalesScreen isAdmin={isAdmin} />}
-          {view === 'inventory' && isAdmin && <AdminScreen connector={connector} section="inventory" />}
-          {view === 'categories' && isAdmin && <AdminScreen connector={connector} section="categories" />}
+          {view === 'inventory' && canManageInventory && (
+            <AdminScreen connector={connector} section="inventory" />
+          )}
+          {view === 'categories' && canManageInventory && (
+            <AdminScreen connector={connector} section="categories" />
+          )}
           {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}
           {showDiagnostics && <DiagnosticsPanel connector={connector} userId={userId} />}
         </main>
