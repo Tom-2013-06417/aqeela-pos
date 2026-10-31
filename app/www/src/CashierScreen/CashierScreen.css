@@ -11,7 +11,7 @@
   min-width: 0;
   min-height: 0;
   padding: 1rem 1rem 1rem 1.15rem;
-  border-right: 1px solid var(--line);
+  border-right: var(--line-width) solid var(--line);
   background: var(--surface-2);
 }
 
@@ -26,10 +26,11 @@
 .cashier-search input {
   width: 100%;
   padding: 0.75rem 0.9rem;
-  border: 1px solid var(--line-strong);
+  border: var(--line-width) solid var(--line-strong);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
+  font-size: 1.05rem;
 }
 
 .product-grid {
@@ -50,11 +51,12 @@
   width: calc((100% - 2.25rem) / 4);
   max-width: calc((100% - 2.25rem) / 4);
   background: var(--product-tint, var(--surface));
-  border: 1px solid var(--line);
+  border: var(--line-width) solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
   min-width: 0;
   min-height: 0;
+  --qty-touch: 3.75rem;
 }
 
 .product-tile.in-cart {
@@ -66,32 +68,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3.2 / 1;
+  min-height: 2.25rem;
+  max-height: 2.75rem;
   background: var(--product-color, #dddddd);
   color: #000000;
-  font-size: 1.75rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  border-bottom: 1px solid #000000;
+  border-bottom: var(--line-width) solid #000000;
 }
 
 .product-tile-body {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.65rem 0.7rem 0.35rem;
+  gap: 0.2rem;
+  padding: 0.7rem 0.75rem 0.4rem;
   flex: 1;
 }
 
 .product-tile-price {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .product-tile-name {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.25;
   text-transform: uppercase;
@@ -99,11 +103,12 @@
 }
 
 .product-tile-stock {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .product-tile-per {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--muted);
 }
@@ -113,32 +118,32 @@
   flex-direction: column;
   gap: 0;
   margin-top: auto;
-  border-top: 1px solid var(--line);
+  border-top: var(--line-width) solid var(--line);
   background: var(--surface);
 }
 
 .rice-qty.compact {
   margin-top: 0.35rem;
-  border: 1px solid var(--line);
-  --qty-touch: 2.75rem;
+  border: var(--line-width) solid var(--line);
+  --qty-touch: 3rem;
 }
 
 .rice-presets {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--line-width) solid var(--line);
 }
 
 .rice-preset {
   flex: 1;
   min-height: var(--qty-touch);
-  padding: 0.25rem 0.2rem;
+  padding: 0.35rem 0.25rem;
   border: none;
-  border-right: 1px solid var(--line);
+  border-right: var(--line-width) solid var(--line);
   background: var(--surface);
   color: var(--ink);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 1.35rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -164,7 +169,7 @@
   gap: 0;
   margin-top: auto;
   padding: 0;
-  border-top: 1px solid var(--line);
+  border-top: var(--line-width) solid var(--line);
   background: var(--surface);
 }
 
@@ -176,14 +181,14 @@
 .qty-control.compact {
   margin: 0;
   padding: 0;
-  border: 1px solid var(--line);
+  border: var(--line-width) solid var(--line);
   background: var(--surface);
-  --qty-touch: 2.75rem;
+  --qty-touch: 3rem;
 }
 
 .rice-qty.compact .qty-control.compact {
   border: none;
-  border-top: 1px solid var(--line);
+  border-top: var(--line-width) solid var(--line);
 }
 
 .qty-btn {
@@ -194,17 +199,17 @@
   width: var(--qty-touch);
   height: var(--qty-touch);
   border: none;
-  border-right: 1px solid var(--line);
+  border-right: var(--line-width) solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .qty-control .qty-btn:last-child {
   border-right: none;
-  border-left: 1px solid var(--line);
+  border-left: var(--line-width) solid var(--line);
 }
 
 .qty-btn:hover:not(:disabled) {
@@ -217,7 +222,7 @@
   text-align: center;
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   background: #ffffff;
   padding: 0.35rem 0;
 }
@@ -241,7 +246,7 @@
   color: var(--ink);
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   text-align: center;
   padding: 0 0.15rem;
   appearance: textfield;
@@ -255,20 +260,20 @@
 
 .qty-unit {
   flex: 0 0 auto;
-  padding-right: 0.4rem;
-  font-size: 0.75rem;
+  padding-right: 0.45rem;
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .qty-control.compact .qty-value {
-  flex: 0 0 2.25rem;
-  font-size: 1.1rem;
+  flex: 0 0 2.5rem;
+  font-size: 1.2rem;
 }
 
 .qty-control.compact .qty-input {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
 }
 
 .cashier-empty {
@@ -292,7 +297,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1.1rem 0.75rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--line-width) solid var(--line);
   flex-shrink: 0;
 }
 
@@ -310,7 +315,7 @@
 
 .cashier-order-header h2 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -349,11 +354,11 @@
 
 .order-line-name {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 
 .order-line-meta {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .order-line-aside {
@@ -372,7 +377,7 @@
 .cashier-order-footer {
   flex-shrink: 0;
   padding: 0.9rem 1.1rem 1.1rem;
-  border-top: 1px solid var(--line);
+  border-top: var(--line-width) solid var(--line);
   background: var(--surface);
 }
 
@@ -381,7 +386,7 @@
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 0.75rem;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 700;
@@ -389,7 +394,7 @@
 
 .cashier-total strong {
   font-family: var(--font-mono);
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   letter-spacing: -0.02em;
   text-transform: none;
 }
@@ -416,31 +421,31 @@
 .pay-cash {
   background: #000000;
   color: #ffffff;
-  border: 1px solid #000000;
+  border: var(--line-width) solid #000000;
 }
 
 .pay-gcash {
   background: #0033cc;
   color: #ffffff;
-  border: 1px solid #000000;
+  border: var(--line-width) solid #000000;
 }
 
 .pay-paymongo {
   background: #00665c;
   color: #ffffff;
-  border: 1px solid #000000;
+  border: var(--line-width) solid #000000;
 }
 
 .pay-card {
   background: #6a1b9a;
   color: #ffffff;
-  border: 1px solid #000000;
+  border: var(--line-width) solid #000000;
 }
 
 .pay-split {
   background: #ffffff;
   color: #000000;
-  border: 1px solid #000000;
+  border: var(--line-width) solid #000000;
 }
 
 .pay-cash:hover:not(:disabled) {
@@ -466,7 +471,7 @@
 @media (max-width: 700px) {
   .cashier {
     flex-direction: column;
-    padding-bottom: 3.5rem;
+    padding-bottom: 3.75rem;
   }
 
   .cashier-catalog {
@@ -477,51 +482,57 @@
   }
 
   .product-grid {
-    gap: 0.5rem;
+    gap: 0.55rem;
   }
 
   .product-tile {
-    flex: 0 0 calc((100% - 0.5rem) / 2);
-    width: calc((100% - 0.5rem) / 2);
-    max-width: calc((100% - 0.5rem) / 2);
+    flex: 0 0 calc((100% - 0.55rem) / 2);
+    width: calc((100% - 0.55rem) / 2);
+    max-width: calc((100% - 0.55rem) / 2);
     overflow: visible;
-    --qty-touch: 2.5rem;
+    --qty-touch: 3.25rem;
   }
 
   .product-tile-image {
-    aspect-ratio: 2.4 / 1;
-    font-size: 1.25rem;
+    aspect-ratio: 3.6 / 1;
+    min-height: 1.85rem;
+    max-height: 2.15rem;
+    font-size: 0.9rem;
   }
 
   .product-tile-body {
-    padding: 0.45rem 0.5rem 0.25rem;
-    gap: 0.1rem;
+    padding: 0.55rem 0.55rem 0.3rem;
+    gap: 0.15rem;
   }
 
   .product-tile-name {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   .product-tile-price {
-    font-size: 0.9rem;
+    font-size: 1.1rem;
   }
 
   .product-tile-stock,
   .product-tile-per {
-    font-size: 0.7rem;
+    font-size: 0.9rem;
   }
 
   .qty-btn {
-    font-size: 1.25rem;
+    font-size: 1.45rem;
   }
 
   .qty-value {
-    font-size: 1rem;
+    font-size: 1.15rem;
+  }
+
+  .qty-input {
+    font-size: 1.15rem;
   }
 
   .rice-preset {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.1rem;
+    font-size: 1.2rem;
+    padding: 0.3rem 0.15rem;
   }
 
   .cashier-order {
@@ -554,7 +565,7 @@
     margin-left: auto;
     min-height: var(--touch);
     padding: 0 0.75rem;
-    border: 1px solid var(--line);
+    border: var(--line-width) solid var(--line);
     background: var(--surface);
     color: var(--ink);
     font: inherit;
@@ -573,9 +584,9 @@
     right: 0;
     bottom: 0;
     z-index: 30;
-    min-height: 3.25rem;
-    padding: 0.5rem 0.85rem;
-    border-top: 1px solid var(--line);
+    min-height: 3.5rem;
+    padding: 0.55rem 0.85rem;
+    border-top: var(--line-width) solid var(--line);
     background: #000000;
     color: #ffffff;
     font: inherit;
@@ -585,7 +596,7 @@
   .cashier-order-bar-count {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -598,14 +609,14 @@
     flex-shrink: 0;
     font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
   }
 
   .cashier-order-bar-cta {
     flex-shrink: 0;
-    padding: 0.4rem 0.65rem;
-    border: 1px solid #ffffff;
-    font-size: 0.75rem;
+    padding: 0.45rem 0.7rem;
+    border: var(--line-width) solid #ffffff;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -651,9 +662,9 @@
 
   .cashier-order.sheet-open .order-line-aside .qty-control.compact {
     flex: 1 1 auto;
-    max-width: 12rem;
+    max-width: 14rem;
     min-width: 0;
-    --qty-touch: 2.75rem;
+    --qty-touch: 3.25rem;
   }
 
   .cashier-order.sheet-open .order-line-aside .qty-control.compact .qty-value {

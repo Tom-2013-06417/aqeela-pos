@@ -30,8 +30,10 @@
 
   --radius: 0;
   --touch: 2.75rem;
-  --qty-touch: 3.5rem;
+  --qty-touch: 3.75rem;
   --pay-height: 4.5rem;
+  --line-width: 1.5px;
+  --font-size: 1.0625rem;
 }
 
 * {
@@ -48,6 +50,7 @@ body,
 body {
   margin: 0;
   font-family: var(--font);
+  font-size: var(--font-size);
   line-height: 1.45;
   color: var(--ink);
   background: var(--bg);
@@ -96,7 +99,7 @@ button:disabled {
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: var(--line-width) solid var(--line);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
 }

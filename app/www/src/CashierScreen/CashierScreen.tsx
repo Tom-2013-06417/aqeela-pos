@@ -166,7 +166,8 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
   function setQty(product: CatalogProduct, next: number) {
     const stockCap = maxQty(product);
-    const capped = Math.max(0, Math.min(roundQty(next), stockCap));
+    const rounded = productIsRice(product) ? roundQty(next) : Math.floor(roundQty(next));
+    const capped = Math.max(0, Math.min(rounded, stockCap));
     setCartQty((prev) => {
       if (capped <= 0) {
         const { [product.id]: _, ...rest } = prev;
@@ -185,7 +186,8 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     if (Object.prototype.hasOwnProperty.call(draftQtyInput, product.id)) {
       return draftQtyInput[product.id];
     }
-    return qty > 0 ? formatKg(qty) : '';
+    if (qty <= 0) return '';
+    return productIsRice(product) ? formatKg(qty) : String(qty);
   }
 
   function commitQtyInput(product: CatalogProduct) {
@@ -376,9 +378,28 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         >
           −
         </button>
-        <span className="qty-value" aria-live="polite">
-          {qty}
-        </span>
+        <label className="qty-input-wrap">
+          <span className="sr-only">Quantity for {product.name}</span>
+          <input
+            className="qty-input"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            step="1"
+            placeholder="0"
+            value={qtyInputValue(product, qty)}
+            disabled={outOfStock && qty <= 0}
+            onChange={(e) =>
+              setDraftQtyInput((prev) => ({ ...prev, [product.id]: e.target.value }))
+            }
+            onBlur={() => commitQtyInput(product)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        </label>
         <button
           type="button"
           className="qty-btn"
