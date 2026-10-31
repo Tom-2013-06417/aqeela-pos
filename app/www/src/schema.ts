@@ -5,9 +5,13 @@ export const STORE_STAFF_TABLE = 'store_staff';
 export const CATEGORIES_TABLE = 'categories';
 export const PRODUCTS_TABLE = 'products';
 export const INVENTORY_LEVELS_TABLE = 'inventory_levels';
+export const STOCK_ADJUSTMENTS_TABLE = 'stock_adjustments';
 export const SALES_TABLE = 'sales';
 export const SALE_LINES_TABLE = 'sale_lines';
 export const SALE_PAYMENTS_TABLE = 'sale_payments';
+
+export const STOCK_ADJUSTMENT_REASONS = ['damage', 'loss', 'correction'] as const;
+export type StockAdjustmentReason = (typeof STOCK_ADJUSTMENT_REASONS)[number];
 
 export const PAYMENT_METHODS = ['cash', 'gcash', 'paymongo_qr', 'card'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -115,6 +119,14 @@ export function isStoreEnabled(store: { enabled?: number | boolean | null }) {
   return value !== 0;
 }
 
+/** Defaults to sellable when column is missing or null (pre-migration rows). */
+export function isProductSellable(product: { sellable?: number | boolean | null }) {
+  const value = product.sellable;
+  if (value == null) return true;
+  if (typeof value === 'boolean') return value;
+  return value !== 0;
+}
+
 const stores = new Table({
   name: column.text,
   payment_methods: column.text,
@@ -147,6 +159,8 @@ const products = new Table(
     color: column.text,
     category_id: column.text,
     kg_per_sack: column.text,
+    // Postgres boolean → SQLite integer (0/1) via PowerSync
+    sellable: column.integer,
     created_at: column.text,
     updated_at: column.text
   },
@@ -158,6 +172,19 @@ const inventoryLevels = new Table(
     product_id: column.text,
     store_id: column.text,
     qty: column.text
+  },
+  { indexes: { product: ['product_id'], store: ['store_id'] } }
+);
+
+const stockAdjustments = new Table(
+  {
+    product_id: column.text,
+    store_id: column.text,
+    qty_delta: column.text,
+    reason: column.text,
+    note: column.text,
+    created_by: column.text,
+    created_at: column.text
   },
   { indexes: { product: ['product_id'], store: ['store_id'] } }
 );
@@ -201,6 +228,7 @@ export const AppSchema = new Schema({
   categories,
   products,
   inventory_levels: inventoryLevels,
+  stock_adjustments: stockAdjustments,
   sales,
   sale_lines: saleLines,
   sale_payments: salePayments
@@ -211,6 +239,7 @@ export type StoreRecord = Database['stores'];
 export type CategoryRecord = Database['categories'];
 export type ProductRecord = Database['products'];
 export type InventoryLevelRecord = Database['inventory_levels'];
+export type StockAdjustmentRecord = Database['stock_adjustments'];
 export type SaleRecord = Database['sales'];
 
 export const RICE_CATEGORY_SLUG = 'rice';
@@ -219,7 +248,11 @@ export function isRiceCategory(category: { slug?: string | null } | null | undef
   return category?.slug === RICE_CATEGORY_SLUG;
 }
 
-/** Client-generated bigint PK for inventory_levels (PowerSync requires an id on insert). */
+/** Client-generated bigint PK for inventory_levels / stock_adjustments (PowerSync requires an id on insert). */
 export function newInventoryLevelId() {
   return String(Date.now() * 4096 + Math.floor(Math.random() * 4096));
+}
+
+export function newStockAdjustmentId() {
+  return newInventoryLevelId();
 }

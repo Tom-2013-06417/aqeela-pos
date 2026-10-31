@@ -17,6 +17,7 @@ import {
   SALES_TABLE,
   STORES_TABLE,
   STORE_STAFF_TABLE,
+  isProductSellable,
   isRiceCategory,
   parsePaymentMethods,
   paymentMethodLabel,
@@ -97,20 +98,27 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     [storeRows]
   );
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<CatalogProduct>(
+  const { data: productsRaw = [], isLoading: productsLoading } = useQuery<
+    CatalogProduct & { sellable?: number | boolean | null }
+  >(
     storeId
-      ? `SELECT p.id, p.name, p.unit, p.price_cents, p.color, p.category_id, p.kg_per_sack,
+      ? `SELECT p.id, p.name, p.unit, p.price_cents, p.color, p.category_id, p.kg_per_sack, p.sellable,
                 il.qty as stock_qty, il.id as inventory_level_id
          FROM ${PRODUCTS_TABLE} p
          INNER JOIN ${INVENTORY_LEVELS_TABLE} il ON il.product_id = p.id
          WHERE il.store_id = ?
          ORDER BY p.name ASC`
-      : `SELECT p.id, p.name, p.unit, p.price_cents, p.color, p.category_id, p.kg_per_sack,
+      : `SELECT p.id, p.name, p.unit, p.price_cents, p.color, p.category_id, p.kg_per_sack, p.sellable,
                 il.qty as stock_qty, il.id as inventory_level_id
          FROM ${PRODUCTS_TABLE} p
          INNER JOIN ${INVENTORY_LEVELS_TABLE} il ON il.product_id = p.id
          WHERE 1 = 0`,
     storeId ? [storeId] : []
+  );
+
+  const products = useMemo(
+    () => productsRaw.filter((product) => isProductSellable(product)),
+    [productsRaw]
   );
 
   const { data: categories = [] } = useQuery<CategoryRecord>(

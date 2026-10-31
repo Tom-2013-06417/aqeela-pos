@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
 import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
@@ -13,11 +13,14 @@ import {
   INVENTORY_LEVELS_TABLE,
   PAYMENT_METHODS,
   PRODUCTS_TABLE,
+  STOCK_ADJUSTMENTS_TABLE,
   STORES_TABLE,
   STORE_STAFF_TABLE,
+  isProductSellable,
   isRiceCategory,
   isStoreEnabled,
   newInventoryLevelId,
+  newStockAdjustmentId,
   parsePaymentMethods,
   parseStaffRole,
   paymentMethodLabel,
@@ -52,6 +55,10 @@ function stockKey(productId: string, storeId: string) {
   return `${productId}:${storeId}`;
 }
 
+function damageKey(productId: string, storeId: string) {
+  return stockKey(productId, storeId);
+}
+
 function formatQty(qty: string | number | null | undefined) {
   if (qty == null || qty === '') return '';
   const n = Number(qty);
@@ -81,11 +88,14 @@ export function AdminScreen({
   const [busy, setBusy] = useState(false);
 
   const [draftStock, setDraftStock] = useState<Record<string, string>>({});
+  const [draftDamage, setDraftDamage] = useState<Record<string, string>>({});
   const [draftName, setDraftName] = useState<Record<string, string>>({});
   const [draftPrice, setDraftPrice] = useState<Record<string, string>>({});
   const [draftColor, setDraftColor] = useState<Record<string, ProductColor>>({});
   const [draftCategory, setDraftCategory] = useState<Record<string, string>>({});
   const [draftKgPerSack, setDraftKgPerSack] = useState<Record<string, string>>({});
+  const [draftUnit, setDraftUnit] = useState<Record<string, string>>({});
+  const [draftSellable, setDraftSellable] = useState<Record<string, boolean>>({});
 
   const [newName, setNewName] = useState('');
   const [newUnit, setNewUnit] = useState('pc');
@@ -94,6 +104,7 @@ export function AdminScreen({
   const [newColor, setNewColor] = useState<ProductColor>('red');
   const [newCategoryId, setNewCategoryId] = useState('');
   const [newKgPerSack, setNewKgPerSack] = useState('25');
+  const [newSellable, setNewSellable] = useState(true);
 
   const [draftCategoryName, setDraftCategoryName] = useState<Record<string, string>>({});
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -212,6 +223,25 @@ export function AdminScreen({
     return level ? formatQty(level.qty ?? '0') : '';
   }
 
+  function damageValue(productId: string, storeId: string) {
+    const key = damageKey(productId, storeId);
+    return Object.prototype.hasOwnProperty.call(draftDamage, key) ? draftDamage[key] : '';
+  }
+
+  function selectedUnit(product: ProductRecord) {
+    if (Object.prototype.hasOwnProperty.call(draftUnit, product.id)) {
+      return draftUnit[product.id];
+    }
+    return product.unit ?? 'pc';
+  }
+
+  function selectedSellable(product: ProductRecord) {
+    if (Object.prototype.hasOwnProperty.call(draftSellable, product.id)) {
+      return draftSellable[product.id];
+    }
+    return isProductSellable(product);
+  }
+
   function paymentTogglesFor(store: StoreRecord): PaymentMethodToggles {
     if (paymentDraft[store.id]) return paymentDraft[store.id];
     return parsePaymentMethods(store.payment_methods);
@@ -243,10 +273,27 @@ export function AdminScreen({
       delete next[productId];
       return next;
     });
+    setDraftUnit((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setDraftSellable((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
     setDraftStock((prev) => {
       const next = { ...prev };
       for (const store of inventoryStores) {
         delete next[stockKey(productId, store.id)];
+      }
+      return next;
+    });
+    setDraftDamage((prev) => {
+      const next = { ...prev };
+      for (const store of inventoryStores) {
+        delete next[damageKey(productId, store.id)];
       }
       return next;
     });
@@ -260,6 +307,8 @@ export function AdminScreen({
     const category = categoryId ? categoriesById.get(categoryId) : undefined;
     const rice = isRiceCategory(category);
     const kgPerSackStr = selectedKgPerSack(product);
+    const unit = selectedUnit(product).trim() || (rice ? 'kg' : 'pc');
+    const sellable = selectedSellable(product);
 
     const pricePesos = Number(priceStr);
     if (!name) {
@@ -271,12 +320,31 @@ export function AdminScreen({
       return;
     }
 
-    const locationQtys: { storeId: string; qty: number | null; level?: InventoryLevelRecord }[] = [];
+    const locationQtys: {
+      storeId: string;
+      storeName: string;
+      qty: number | null;
+      damage: number;
+      level?: InventoryLevelRecord;
+    }[] = [];
     for (const store of inventoryStores) {
       const raw = stockValue(product.id, store.id).trim();
+      const damageRaw = damageValue(product.id, store.id).trim();
       const level = levelsByKey.get(stockKey(product.id, store.id));
+      let damage = 0;
+      if (damageRaw !== '') {
+        damage = Number(damageRaw);
+        if (!Number.isFinite(damage) || damage < 0) {
+          setMessage(`Enter a valid damaged qty for ${store.name}`);
+          return;
+        }
+      }
       if (raw === '') {
-        locationQtys.push({ storeId: store.id, qty: null, level });
+        if (damage > 0) {
+          setMessage(`Set stock at ${store.name} before recording damage`);
+          return;
+        }
+        locationQtys.push({ storeId: store.id, storeName: store.name ?? '', qty: null, damage: 0, level });
         continue;
       }
       const qty = Number(raw);
@@ -284,7 +352,11 @@ export function AdminScreen({
         setMessage(`Enter a valid stock quantity for ${store.name}`);
         return;
       }
-      locationQtys.push({ storeId: store.id, qty, level });
+      if (damage > qty) {
+        setMessage(`Damaged qty cannot exceed stock at ${store.name}`);
+        return;
+      }
+      locationQtys.push({ storeId: store.id, storeName: store.name ?? '', qty, damage, level });
     }
 
     if (!locationQtys.some((row) => row.qty != null)) {
@@ -311,13 +383,23 @@ export function AdminScreen({
     try {
       const priceCents = Math.round(pricePesos * 100);
       const now = new Date().toISOString();
-      const unit = rice ? 'kg' : (product.unit ?? 'pc');
+      let damageLogged = 0;
       await db.writeTransaction(async (tx) => {
         await tx.execute(
           `UPDATE ${PRODUCTS_TABLE}
-           SET name = ?, price_cents = ?, color = ?, category_id = ?, kg_per_sack = ?, unit = ?, updated_at = ?
+           SET name = ?, price_cents = ?, color = ?, category_id = ?, kg_per_sack = ?, unit = ?, sellable = ?, updated_at = ?
            WHERE id = ?`,
-          [name, priceCents, color, categoryId || null, kgPerSack, unit, now, product.id]
+          [
+            name,
+            priceCents,
+            color,
+            categoryId || null,
+            kgPerSack,
+            unit,
+            sellable ? 1 : 0,
+            now,
+            product.id
+          ]
         );
 
         for (const row of locationQtys) {
@@ -327,7 +409,8 @@ export function AdminScreen({
             }
             continue;
           }
-          const qtyStr = row.qty.toFixed(3);
+          const finalQty = row.qty - row.damage;
+          const qtyStr = finalQty.toFixed(3);
           if (row.level) {
             await tx.execute(`UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`, [
               qtyStr,
@@ -339,9 +422,31 @@ export function AdminScreen({
               [newInventoryLevelId(), product.id, row.storeId, qtyStr]
             );
           }
+          if (row.damage > 0) {
+            damageLogged += 1;
+            await tx.execute(
+              `INSERT INTO ${STOCK_ADJUSTMENTS_TABLE}
+                 (id, product_id, store_id, qty_delta, reason, note, created_by, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                newStockAdjustmentId(),
+                product.id,
+                row.storeId,
+                (-row.damage).toFixed(3),
+                'damage',
+                null,
+                userId || null,
+                now
+              ]
+            );
+          }
         }
       });
-      setMessage(`Updated ${name}`);
+      setMessage(
+        damageLogged > 0
+          ? `Updated ${name} (recorded damage at ${damageLogged} location${damageLogged === 1 ? '' : 's'})`
+          : `Updated ${name}`
+      );
       clearProductDrafts(product.id);
       setProductModal(null);
     } catch (err) {
@@ -361,7 +466,7 @@ export function AdminScreen({
     const name = newName.trim();
     const category = newCategoryId ? categoriesById.get(newCategoryId) : undefined;
     const rice = isRiceCategory(category);
-    const unit = rice ? 'kg' : newUnit.trim() || 'pc';
+    const unit = newUnit.trim() || (rice ? 'kg' : 'pc');
     const pricePesos = Number(newPrice);
 
     if (!name) {
@@ -413,9 +518,20 @@ export function AdminScreen({
       await db.writeTransaction(async (tx) => {
         await tx.execute(
           `INSERT INTO ${PRODUCTS_TABLE}
-             (id, name, unit, price_cents, color, category_id, kg_per_sack, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, name, unit, priceCents, newColor, newCategoryId || null, kgPerSack, now, now]
+             (id, name, unit, price_cents, color, category_id, kg_per_sack, sellable, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            name,
+            unit,
+            priceCents,
+            newColor,
+            newCategoryId || null,
+            kgPerSack,
+            newSellable ? 1 : 0,
+            now,
+            now
+          ]
         );
         for (const row of locationQtys) {
           await tx.execute(
@@ -432,6 +548,7 @@ export function AdminScreen({
       setNewColor('red');
       setNewCategoryId('');
       setNewKgPerSack('25');
+      setNewSellable(true);
       setProductModal(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Add product failed');
@@ -816,7 +933,9 @@ export function AdminScreen({
           {section === 'all' && <h2>Inventory</h2>}
           {section === 'all' && (
             <p className="muted">
-              Edit name, price, and stock per location. Blank stock means not carried there.
+              Edit name, price, unit, and stock per location. Enter damaged qty to reduce stock as a
+              loss on save. Uncheck For sale for internal supplies. Blank stock means not carried
+              there.
             </p>
           )}
 
@@ -827,12 +946,18 @@ export function AdminScreen({
               <span className="inventory-category">Category</span>
               <span className="inventory-price">Price (₱)</span>
               {inventoryStores.map((store) => (
-                <span key={store.id} className="inventory-stock" title={store.name ?? undefined}>
-                  {store.name}
-                </span>
+                <Fragment key={store.id}>
+                  <span className="inventory-stock" title={store.name ?? undefined}>
+                    {store.name}
+                  </span>
+                  <span className="inventory-damage" title={`Damaged at ${store.name}`}>
+                    Dmg
+                  </span>
+                </Fragment>
               ))}
               <span className="inventory-unit">Unit</span>
               {showKgPerSackColumn && <span className="inventory-sack">Kg/sack</span>}
+              <span className="inventory-sellable">For sale</span>
               <span className="inventory-action" />
             </div>
 
@@ -846,6 +971,8 @@ export function AdminScreen({
               const category = categoryId ? categoriesById.get(categoryId) : undefined;
               const rice = isRiceCategory(category);
               const kgPerSackVal = selectedKgPerSack(product);
+              const unitVal = selectedUnit(product);
+              const sellableVal = selectedSellable(product);
 
               return (
                 <div key={product.id} className="inventory-row">
@@ -903,25 +1030,45 @@ export function AdminScreen({
                     onChange={(e) => setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }))}
                   />
                   {inventoryStores.map((store) => (
-                    <input
-                      key={store.id}
-                      className="inventory-stock"
-                      aria-label={`Stock for ${product.name} at ${store.name}${rice ? ' (kg)' : ''}`}
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="—"
-                      value={stockValue(product.id, store.id)}
-                      onChange={(e) =>
-                        setDraftStock((prev) => ({
-                          ...prev,
-                          [stockKey(product.id, store.id)]: e.target.value
-                        }))
-                      }
-                    />
+                    <Fragment key={store.id}>
+                      <input
+                        className="inventory-stock"
+                        aria-label={`Stock for ${product.name} at ${store.name}${rice ? ' (kg)' : ''}`}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="—"
+                        value={stockValue(product.id, store.id)}
+                        onChange={(e) =>
+                          setDraftStock((prev) => ({
+                            ...prev,
+                            [stockKey(product.id, store.id)]: e.target.value
+                          }))
+                        }
+                      />
+                      <input
+                        className="inventory-damage"
+                        aria-label={`Damaged qty for ${product.name} at ${store.name}`}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={damageValue(product.id, store.id)}
+                        onChange={(e) =>
+                          setDraftDamage((prev) => ({
+                            ...prev,
+                            [damageKey(product.id, store.id)]: e.target.value
+                          }))
+                        }
+                      />
+                    </Fragment>
                   ))}
-                  <span className="inventory-unit" title={rice ? 'kg' : (product.unit ?? '')}>
-                    {rice ? 'kg' : product.unit}
-                  </span>
+                  <input
+                    className="inventory-unit inventory-unit-input"
+                    aria-label={`Unit for ${product.name}`}
+                    value={unitVal}
+                    onChange={(e) =>
+                      setDraftUnit((prev) => ({ ...prev, [product.id]: e.target.value }))
+                    }
+                  />
                   {showKgPerSackColumn &&
                     (rice ? (
                       <input
@@ -939,6 +1086,16 @@ export function AdminScreen({
                     ) : (
                       <span className="inventory-sack" />
                     ))}
+                  <label className="inventory-sellable">
+                    <span className="sr-only">For sale — {product.name}</span>
+                    <input
+                      type="checkbox"
+                      checked={sellableVal}
+                      onChange={(e) =>
+                        setDraftSellable((prev) => ({ ...prev, [product.id]: e.target.checked }))
+                      }
+                    />
+                  </label>
                   <button
                     type="button"
                     className="inventory-action"
@@ -970,7 +1127,10 @@ export function AdminScreen({
                     aria-hidden="true"
                   />
                   <span className="mobile-list-primary">{product.name}</span>
-                  <span className="mobile-list-meta">{priceLabel}</span>
+                  <span className="mobile-list-meta">
+                    {priceLabel}
+                    {!isProductSellable(product) ? ' · internal' : ''}
+                  </span>
                   <span className="mobile-list-chevron" aria-hidden="true">
                     ›
                   </span>
@@ -989,6 +1149,7 @@ export function AdminScreen({
                 setNewColor('red');
                 setNewCategoryId('');
                 setNewKgPerSack('25');
+                setNewSellable(true);
                 setProductModal('add');
               }}
             >
@@ -1056,31 +1217,29 @@ export function AdminScreen({
                 required
               />
               {inventoryStores.map((store) => (
-                <input
-                  key={store.id}
-                  className="inventory-stock"
-                  aria-label={`New product stock at ${store.name}`}
-                  type="text"
-                  inputMode="decimal"
-                  placeholder={store.name ?? ''}
-                  value={newStockByStore[store.id] ?? ''}
-                  onChange={(e) =>
-                    setNewStockByStore((prev) => ({ ...prev, [store.id]: e.target.value }))
-                  }
-                />
+                <Fragment key={store.id}>
+                  <input
+                    className="inventory-stock"
+                    aria-label={`New product stock at ${store.name}`}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder={store.name ?? ''}
+                    value={newStockByStore[store.id] ?? ''}
+                    onChange={(e) =>
+                      setNewStockByStore((prev) => ({ ...prev, [store.id]: e.target.value }))
+                    }
+                  />
+                  <span className="inventory-damage inventory-damage-spacer" aria-hidden="true" />
+                </Fragment>
               ))}
-              {newCategoryIsRice ? (
-                <span className="inventory-unit">kg</span>
-              ) : (
-                <input
-                  className="inventory-unit inventory-unit-input"
-                  aria-label="New product unit"
-                  placeholder="Unit"
-                  value={newUnit}
-                  onChange={(e) => setNewUnit(e.target.value)}
-                  required
-                />
-              )}
+              <input
+                className="inventory-unit inventory-unit-input"
+                aria-label="New product unit"
+                placeholder={newCategoryIsRice ? 'kg' : 'Unit'}
+                value={newUnit}
+                onChange={(e) => setNewUnit(e.target.value)}
+                required
+              />
               {showKgPerSackColumn &&
                 (newCategoryIsRice ? (
                   <input
@@ -1096,6 +1255,14 @@ export function AdminScreen({
                 ) : (
                   <span className="inventory-sack" />
                 ))}
+              <label className="inventory-sellable" title="Uncheck for internal supplies">
+                <span className="sr-only">For sale</span>
+                <input
+                  type="checkbox"
+                  checked={newSellable}
+                  onChange={(e) => setNewSellable(e.target.checked)}
+                />
+              </label>
               <button type="submit" className="inventory-action" disabled={busy || !hasStore}>
                 Add
               </button>
@@ -1307,7 +1474,8 @@ export function AdminScreen({
           ? (draftPrice[product.id] ?? String(((product.price_cents ?? 0) / 100).toFixed(2)))
           : newPrice;
         const kgPerSackVal = product ? selectedKgPerSack(product) : newKgPerSack;
-        const unitVal = product ? (product.unit ?? 'pc') : newUnit;
+        const unitVal = product ? selectedUnit(product) : newUnit;
+        const sellableVal = product ? selectedSellable(product) : newSellable;
 
         return (
           <div
@@ -1411,19 +1579,19 @@ export function AdminScreen({
                     }}
                   />
                 </label>
-                {!rice && (
-                  <label className="modal-field">
-                    <span>Unit</span>
-                    {product ? (
-                      <input value={unitVal} readOnly />
-                    ) : (
-                      <input
-                        value={newUnit}
-                        onChange={(e) => setNewUnit(e.target.value)}
-                      />
-                    )}
-                  </label>
-                )}
+                <label className="modal-field">
+                  <span>Unit</span>
+                  <input
+                    value={unitVal}
+                    onChange={(e) => {
+                      if (product) {
+                        setDraftUnit((prev) => ({ ...prev, [product.id]: e.target.value }));
+                      } else {
+                        setNewUnit(e.target.value);
+                      }
+                    }}
+                  />
+                </label>
                 {rice && (
                   <label className="modal-field">
                     <span>Kg per sack</span>
@@ -1446,33 +1614,70 @@ export function AdminScreen({
                     />
                   </label>
                 )}
-                {inventoryStores.map((store) => (
-                  <label key={store.id} className="modal-field">
-                    <span>Stock · {store.name}{rice ? ' (kg)' : ''}</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="—"
-                      value={
-                        product
-                          ? stockValue(product.id, store.id)
-                          : (newStockByStore[store.id] ?? '')
+                <label className="modal-field modal-field-checkbox">
+                  <span>For sale</span>
+                  <input
+                    type="checkbox"
+                    checked={sellableVal}
+                    onChange={(e) => {
+                      if (product) {
+                        setDraftSellable((prev) => ({
+                          ...prev,
+                          [product.id]: e.target.checked
+                        }));
+                      } else {
+                        setNewSellable(e.target.checked);
                       }
-                      onChange={(e) => {
-                        if (product) {
-                          setDraftStock((prev) => ({
-                            ...prev,
-                            [stockKey(product.id, store.id)]: e.target.value
-                          }));
-                        } else {
-                          setNewStockByStore((prev) => ({
-                            ...prev,
-                            [store.id]: e.target.value
-                          }));
+                    }}
+                  />
+                  <span className="muted">Uncheck for internal supplies (hidden from cashier)</span>
+                </label>
+                {inventoryStores.map((store) => (
+                  <div key={store.id} className="modal-stock-group">
+                    <label className="modal-field">
+                      <span>Stock · {store.name}{rice ? ' (kg)' : ''}</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="—"
+                        value={
+                          product
+                            ? stockValue(product.id, store.id)
+                            : (newStockByStore[store.id] ?? '')
                         }
-                      }}
-                    />
-                  </label>
+                        onChange={(e) => {
+                          if (product) {
+                            setDraftStock((prev) => ({
+                              ...prev,
+                              [stockKey(product.id, store.id)]: e.target.value
+                            }));
+                          } else {
+                            setNewStockByStore((prev) => ({
+                              ...prev,
+                              [store.id]: e.target.value
+                            }));
+                          }
+                        }}
+                      />
+                    </label>
+                    {product && (
+                      <label className="modal-field">
+                        <span>Damaged · {store.name}</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={damageValue(product.id, store.id)}
+                          onChange={(e) =>
+                            setDraftDamage((prev) => ({
+                              ...prev,
+                              [damageKey(product.id, store.id)]: e.target.value
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
+                  </div>
                 ))}
               </div>
               <footer className="modal-footer">

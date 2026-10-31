@@ -16,6 +16,9 @@ streams:
       - SELECT inventory_levels.* FROM inventory_levels
         INNER JOIN store_staff ON store_staff.store_id = inventory_levels.store_id
         WHERE store_staff.user_id = auth.user_id()
+      - SELECT stock_adjustments.* FROM stock_adjustments
+        INNER JOIN store_staff ON store_staff.store_id = stock_adjustments.store_id
+        WHERE store_staff.user_id = auth.user_id()
       - SELECT categories.* FROM categories
         INNER JOIN store_staff ON store_staff.user_id = auth.user_id()
       - SELECT sales.* FROM sales
