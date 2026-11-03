@@ -1,5 +1,29 @@
-.sales-admin-actions {
+.sales-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
   margin-bottom: 0.75rem;
+}
+
+.sales-store-filter {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.sales-store-filter select {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 0 0.75rem;
+  border: var(--line-width, 1px) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.sales-admin-actions {
+  flex: 0 0 auto;
+  margin-bottom: 0;
 }
 
 .sales-danger-btn {

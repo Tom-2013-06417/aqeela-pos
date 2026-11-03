@@ -36,16 +36,30 @@ function formatQty(qty: string) {
 
 export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   const [page, setPage] = useState(1);
+  const [storeFilter, setStoreFilter] = useState('');
   const viewRef = useRef<HTMLDivElement>(null);
   const [expandedSaleIds, setExpandedSaleIds] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const { data: stores = [] } = useQuery<{ id: string; name: string | null }>(
+    `SELECT id, name FROM ${STORES_TABLE} ORDER BY name ASC`
+  );
+  const showStoreFilter = stores.length > 1;
+  const showStoreLabel = isAdmin || showStoreFilter;
+
   const { data: countRows = [] } = useQuery<{ total: number | string }>(
-    `SELECT COUNT(*) as total FROM ${SALES_TABLE}`
+    storeFilter
+      ? `SELECT COUNT(*) as total FROM ${SALES_TABLE} WHERE store_id = ?`
+      : `SELECT COUNT(*) as total FROM ${SALES_TABLE}`,
+    storeFilter ? [storeFilter] : []
   );
   const totalSales = Number(countRows[0]?.total ?? 0);
   const pageCount = Math.max(1, Math.ceil(totalSales / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [storeFilter]);
 
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
@@ -60,11 +74,19 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     payment_method: string;
     created_at: string;
   }>(
-    `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method, s.created_at
-     FROM ${SALES_TABLE} s
-     LEFT JOIN ${STORES_TABLE} st ON st.id = s.store_id
-     ORDER BY s.created_at DESC
-     LIMIT ${PAGE_SIZE} OFFSET ${offset}`
+    storeFilter
+      ? `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method, s.created_at
+         FROM ${SALES_TABLE} s
+         LEFT JOIN ${STORES_TABLE} st ON st.id = s.store_id
+         WHERE s.store_id = ?
+         ORDER BY s.created_at DESC
+         LIMIT ${PAGE_SIZE} OFFSET ${offset}`
+      : `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method, s.created_at
+         FROM ${SALES_TABLE} s
+         LEFT JOIN ${STORES_TABLE} st ON st.id = s.store_id
+         ORDER BY s.created_at DESC
+         LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
+    storeFilter ? [storeFilter] : []
   );
 
   const pages = useMemo(() => Array.from({ length: pageCount }, (_, i) => i + 1), [pageCount]);
@@ -169,7 +191,11 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     <div className="panel-view" ref={viewRef}>
       <header className="panel-view-header">
         <h1>Sales</h1>
-        <p className="muted">Recent orders on this device</p>
+        <p className="muted">
+          {storeFilter
+            ? `Orders for ${stores.find((s) => s.id === storeFilter)?.name ?? 'this store'}`
+            : 'Recent orders on this device'}
+        </p>
       </header>
 
       <div className="panel-view-body">
@@ -178,15 +204,43 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
           variant={message?.includes('Failed') ? 'error' : 'success'}
           onDismiss={() => setMessage(null)}
         />
-        {isAdmin && (
-          <div className="sales-admin-actions">
-            <button type="button" className="sales-danger-btn" disabled={busy || (totalSales === 0 && sales.length === 0)} onClick={() => void clearAllSales()}>
-              Clear all sales
-            </button>
+        {(showStoreFilter || isAdmin) && (
+          <div className="sales-toolbar">
+            {showStoreFilter && (
+              <label className="sales-store-filter">
+                <span className="sr-only">Filter by store</span>
+                <select
+                  value={storeFilter}
+                  onChange={(e) => setStoreFilter(e.target.value)}
+                  aria-label="Filter by store"
+                >
+                  <option value="">All stores</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name ?? 'Unnamed store'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {isAdmin && (
+              <div className="sales-admin-actions">
+                <button
+                  type="button"
+                  className="sales-danger-btn"
+                  disabled={busy || (totalSales === 0 && sales.length === 0)}
+                  onClick={() => void clearAllSales()}
+                >
+                  Clear all sales
+                </button>
+              </div>
+            )}
           </div>
         )}
         {isLoading && sales.length === 0 && <p className="muted">Loading…</p>}
-        {!isLoading && sales.length === 0 && totalSales === 0 && <p className="muted">No sales yet.</p>}
+        {!isLoading && sales.length === 0 && totalSales === 0 && (
+          <p className="muted">{storeFilter ? 'No sales for this store.' : 'No sales yet.'}</p>
+        )}
         <ul className="sales-list">
           {sales.map((sale) => {
             const isExpanded = expandedSaleIds[sale.id] === true;
@@ -216,7 +270,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                     </span>
                     <span className="sales-expand-meta">
                       <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
-                      {isAdmin && (
+                      {showStoreLabel && !storeFilter && (
                         <span className="muted">{sale.store_name ?? 'Unknown branch'}</span>
                       )}
                     </span>
