@@ -1,12 +1,19 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import './SideNav.css';
 
-export type AppView = 'cashier' | 'sales' | 'inventory' | 'categories' | 'stores' | 'users';
+export type AppView =
+  | 'cashier'
+  | 'sales'
+  | 'inventory'
+  | 'categories'
+  | 'adjustments'
+  | 'stores'
+  | 'users';
 
 type NavItem = {
   id: AppView;
   label: string;
-  /** Inventory + Categories: admin or inventory_manager */
+  /** Inventory + Categories + Adjustments: admin or inventory_manager */
   inventoryAccess?: boolean;
   /** Stores + Users: admin only */
   adminOnly?: boolean;
@@ -19,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'sales', label: 'Sales' },
   { id: 'inventory', label: 'Inventory', inventoryAccess: true },
   { id: 'categories', label: 'Categories', inventoryAccess: true },
+  { id: 'adjustments', label: 'Adjustments', inventoryAccess: true },
   { id: 'stores', label: 'Stores', adminOnly: true },
   { id: 'users', label: 'Users', adminOnly: true }
 ];
@@ -67,6 +75,18 @@ function IconCategories() {
   );
 }
 
+function IconAdjustments() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M4 6h16" />
+      <path d="M4 12h10" />
+      <path d="M4 18h13" />
+      <path d="M16 9v6" />
+      <path d="M14 11l2 2 2-2" />
+    </svg>
+  );
+}
+
 function IconStores() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -111,6 +131,7 @@ const ICONS: Record<AppView, () => React.ReactNode> = {
   sales: IconSales,
   inventory: IconInventory,
   categories: IconCategories,
+  adjustments: IconAdjustments,
   stores: IconStores,
   users: IconUsers
 };
@@ -120,6 +141,7 @@ export const VIEW_LABELS: Record<AppView, string> = {
   sales: 'Sales',
   inventory: 'Inventory',
   categories: 'Categories',
+  adjustments: 'Adjustments',
   stores: 'Stores',
   users: 'Users'
 };

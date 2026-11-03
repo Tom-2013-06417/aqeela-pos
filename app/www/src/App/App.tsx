@@ -6,6 +6,7 @@ import { CashierScreen } from '../CashierScreen/CashierScreen';
 import { SupabaseConnector } from '../connector';
 import { PwaBanner } from '../PwaBanner/PwaBanner';
 import { db } from '../powerSync';
+import { AdjustmentsScreen } from '../AdjustmentsScreen/AdjustmentsScreen';
 import { SalesScreen } from '../SalesScreen/SalesScreen';
 import { SideNav, VIEW_LABELS, type AppView } from '../SideNav/SideNav';
 import { StoresScreen } from '../StoresScreen/StoresScreen';
@@ -164,7 +165,10 @@ function AuthedApp({
       setView(canManageInventory ? 'inventory' : canUseCashier ? 'cashier' : 'sales');
       return;
     }
-    if ((view === 'inventory' || view === 'categories') && !canManageInventory) {
+    if (
+      (view === 'inventory' || view === 'categories' || view === 'adjustments') &&
+      !canManageInventory
+    ) {
       setView(canUseCashier ? 'cashier' : 'sales');
       return;
     }
@@ -243,6 +247,9 @@ function AuthedApp({
           )}
           {view === 'categories' && canManageInventory && (
             <AdminScreen connector={connector} section="categories" />
+          )}
+          {view === 'adjustments' && canManageInventory && (
+            <AdjustmentsScreen connector={connector} />
           )}
           {view === 'stores' && isAdmin && <StoresScreen connector={connector} />}
           {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}
