@@ -1,0 +1,216 @@
+.stores-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.stores-filter-btn {
+  min-height: var(--touch);
+  padding: 0 0.85rem;
+  border: var(--line-width, 1px) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.stores-filter-btn.active {
+  background: #000000;
+  color: #ffffff;
+}
+
+.stores-list {
+  border: var(--line-width, 1px) solid var(--line);
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+}
+
+.stores-row {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--touch);
+  border-bottom: var(--line-width, 1px) solid var(--line);
+}
+
+.stores-list .stores-row:last-child {
+  border-bottom: none;
+}
+
+.stores-row > * {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--touch);
+  height: var(--touch);
+  padding: 0 0.65rem;
+  border: none;
+  border-right: var(--line-width, 1px) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.stores-row > *:last-child {
+  border-right: none;
+}
+
+.stores-name {
+  flex: 1 1 0;
+  min-width: 8rem;
+}
+
+.stores-status {
+  flex: 0 0 9rem;
+  width: 9rem;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.stores-status input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: #000000;
+}
+
+.stores-action {
+  flex: 0 0 6.5rem;
+  width: 6.5rem;
+  justify-content: center;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.stores-action-secondary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.stores-action-secondary:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.stores-action:hover:not(:disabled) {
+  background: #222222;
+}
+
+.stores-action-secondary:hover:not(:disabled) {
+  background: #eeeeee;
+  color: #000000;
+}
+
+.stores-head {
+  background: #000000;
+}
+
+.stores-head > * {
+  background: #000000;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stores-add h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stores-add-row {
+  border: var(--line-width, 1px) solid var(--line);
+}
+
+.stores-inactive-meta {
+  color: var(--danger, #cc0000);
+}
+
+.stores-screen-mobile-list {
+  display: none;
+  flex-direction: column;
+  border: var(--line-width, 1px) solid var(--line);
+  background: var(--surface);
+  margin-bottom: 1rem;
+}
+
+.stores-screen-mobile-list .mobile-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-bottom: var(--line-width, 1px) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stores-screen-mobile-list .mobile-list-primary {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stores-screen-mobile-list .mobile-list-meta {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.stores-screen-mobile-list .mobile-list-chevron {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.stores-screen-mobile-list .mobile-add-btn {
+  width: 100%;
+  min-height: var(--touch);
+  border: none;
+  border-top: var(--line-width, 1px) solid var(--line);
+  background: #000000;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .stores-screen-mobile-list.mobile-only {
+    display: flex;
+  }
+}
+
+.modal-field-checkbox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.modal-field-checkbox > span:first-child {
+  flex: 0 0 100%;
+}

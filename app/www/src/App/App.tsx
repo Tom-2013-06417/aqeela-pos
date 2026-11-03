@@ -8,6 +8,7 @@ import { PwaBanner } from '../PwaBanner/PwaBanner';
 import { db } from '../powerSync';
 import { SalesScreen } from '../SalesScreen/SalesScreen';
 import { SideNav, VIEW_LABELS, type AppView } from '../SideNav/SideNav';
+import { StoresScreen } from '../StoresScreen/StoresScreen';
 import { resolveStaffAccess, STORE_STAFF_TABLE } from '../schema';
 import './App.css';
 
@@ -159,7 +160,7 @@ function AuthedApp({
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if (view === 'users' && !isAdmin) {
+    if ((view === 'users' || view === 'stores') && !isAdmin) {
       setView(canManageInventory ? 'inventory' : canUseCashier ? 'cashier' : 'sales');
       return;
     }
@@ -243,6 +244,7 @@ function AuthedApp({
           {view === 'categories' && canManageInventory && (
             <AdminScreen connector={connector} section="categories" />
           )}
+          {view === 'stores' && isAdmin && <StoresScreen connector={connector} />}
           {view === 'users' && isAdmin && <AdminScreen connector={connector} section="users" />}
           {showDiagnostics && <DiagnosticsPanel connector={connector} userId={userId} />}
         </main>
