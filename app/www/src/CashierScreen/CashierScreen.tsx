@@ -616,18 +616,19 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 const rice = productIsRice(product);
                 return (
                   <li key={product.id} className="order-line">
-                    <div className="order-line-main">
-                      <span className="order-line-name">{product.name}</span>
-                      <span className="order-line-meta muted">
-                        {rice ? `${formatKg(qty)} kg` : qty} × {formatMoney(product.price_cents ?? 0)}
-                        {rice ? '/kg' : ''}
-                      </span>
-                      {rice && renderRiceQty(product, qty, true)}
-                    </div>
-                    <div className="order-line-aside">
+                    <div className="order-line-top">
+                      <div className="order-line-main">
+                        <span className="order-line-name">{product.name}</span>
+                        <span className="order-line-meta muted">
+                          {rice ? `${formatKg(qty)} kg` : qty} × {formatMoney(product.price_cents ?? 0)}
+                          {rice ? '/kg' : ''}
+                        </span>
+                      </div>
                       <span className="order-line-total">{formatMoney(lineTotal)}</span>
-                      {!rice && renderPieceQty(product, qty, true)}
                     </div>
+                    {rice
+                      ? renderRiceQty(product, qty, true)
+                      : renderPieceQty(product, qty, true)}
                   </li>
                 );
               })}
