@@ -99,7 +99,10 @@ function DiagnosticsPanel({
       const { data: sessionData } = await connector.client.auth.getSession();
       if (!sessionData.session) return;
 
-      const staffResult = await connector.client.from('store_staff').select('*', { count: 'exact', head: true });
+      const staffResult = await connector.client
+        .from('store_staff')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
 
       setRemote({
         staffCount: staffResult.count ?? 0,
@@ -111,11 +114,21 @@ function DiagnosticsPanel({
   }, [connector, userId, status.hasSynced]);
 
   const downloadError = status.dataFlowStatus?.downloadError?.message;
+  const staffSyncGap =
+    remote != null && remote.staffCount > 0 && staffRows.length === 0;
 
   return (
     <section className="card diagnostics diagnostics-overlay">
       <h2>Diagnostics</h2>
       {downloadError && <p className="error">Sync error: {downloadError}</p>}
+      {staffSyncGap && (
+        <p className="error">
+          PowerSync reports synced but local store_staff is empty while remote has{' '}
+          {remote.staffCount} row(s). Clear site data for this origin (or reinstall the
+          PWA), then sign in again. Nav roles will also fall back to Supabase while
+          online.
+        </p>
+      )}
       <ul className="diag-list">
         <li>
           Logged-in user: <code>{userId || 'unknown'}</code>
@@ -152,9 +165,47 @@ function AuthedApp({
     userId ? [userId] : []
   );
 
-  const { isAdmin, canManageInventory, canUseCashier } = resolveStaffAccess(
-    staffRows.map((row) => row.role)
-  );
+  // PowerSync can report hasSynced while local store_staff is still empty (seen on
+  // some PWA installs). Fall back to Supabase for nav roles when online.
+  const [remoteRoles, setRemoteRoles] = useState<string[] | null>(null);
+  const [remoteRolesLoading, setRemoteRolesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId || staffLoading) return;
+    if (staffRows.length > 0) {
+      setRemoteRoles(null);
+      setRemoteRolesLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setRemoteRolesLoading(true);
+    void (async () => {
+      try {
+        const { data, error } = await connector.client
+          .from('store_staff')
+          .select('role')
+          .eq('user_id', userId);
+        if (cancelled) return;
+        if (error) {
+          console.error('Remote store_staff role fetch failed', error);
+          setRemoteRoles([]);
+          return;
+        }
+        setRemoteRoles((data ?? []).map((row) => row.role));
+      } finally {
+        if (!cancelled) setRemoteRolesLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, connector, staffLoading, staffRows.length, status.hasSynced]);
+
+  const roleList =
+    staffRows.length > 0 ? staffRows.map((row) => row.role) : (remoteRoles ?? []);
+  const { isAdmin, canManageInventory, canUseCashier } = resolveStaffAccess(roleList);
   const [view, setView] = useState<AppView>('sales');
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -186,7 +237,7 @@ function AuthedApp({
     }
   }
 
-  if (staffLoading) {
+  if (staffLoading || (staffRows.length === 0 && remoteRolesLoading && remoteRoles === null)) {
     return <div className="page centered">Loading…</div>;
   }
 
