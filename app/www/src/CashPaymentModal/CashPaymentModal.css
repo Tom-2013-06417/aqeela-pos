@@ -14,6 +14,7 @@
   max-width: 26rem;
   background: var(--surface);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 1.25rem 1.35rem 1.35rem;
   display: flex;
   flex-direction: column;
@@ -32,10 +33,10 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 0.75rem;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .cash-amount {
@@ -54,16 +55,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .cash-input-wrap {
   display: flex;
   align-items: center;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -78,6 +80,7 @@
   flex: 1;
   min-width: 0;
   border: none;
+  border-radius: 0;
   background: transparent;
   color: var(--ink);
   font-family: var(--font-mono);
@@ -103,7 +106,7 @@
 
 .cash-actions {
   display: flex;
-  gap: 0;
+  gap: 0.4rem;
   margin-top: 0.35rem;
 }
 
@@ -111,10 +114,10 @@
 .cash-confirm {
   flex: 1;
   min-height: 3.25rem;
-  font-weight: 700;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: 0;
   border: 1px solid var(--line);
 }
 
@@ -124,13 +127,15 @@
 }
 
 .cash-confirm {
-  background: #000000;
-  color: #ffffff;
-  border-left: none;
+  background: var(--fill);
+  color: var(--on-fill);
 }
 
-.cash-cancel:hover:not(:disabled),
+.cash-cancel:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
 .cash-confirm:hover:not(:disabled) {
-  background: #222222;
-  color: #ffffff;
+  background: var(--fill-hover);
+  color: var(--on-fill);
 }

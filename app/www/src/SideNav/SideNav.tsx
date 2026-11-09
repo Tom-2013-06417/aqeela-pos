@@ -22,21 +22,20 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'cashier', label: 'Cashier', cashierOnly: true },
-  { id: 'sales', label: 'Sales' },
-  { id: 'inventory', label: 'Inventory', inventoryAccess: true },
+  { id: 'cashier', label: 'Entry', cashierOnly: true },
+  { id: 'sales', label: 'Log' },
+  { id: 'inventory', label: 'Stock', inventoryAccess: true },
   { id: 'categories', label: 'Categories', inventoryAccess: true },
   { id: 'adjustments', label: 'Adjustments', inventoryAccess: true },
   { id: 'stores', label: 'Stores', adminOnly: true },
-  { id: 'users', label: 'Users', adminOnly: true }
+  { id: 'users', label: 'Staff', adminOnly: true }
 ];
 
 function IconCashier() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 10h18" />
-      <path d="M8 14h3" />
+      <path d="M6 4h9l3 3v13H6z" />
+      <path d="M9 12h6M9 16h4" />
     </svg>
   );
 }
@@ -137,14 +136,71 @@ const ICONS: Record<AppView, () => React.ReactNode> = {
 };
 
 export const VIEW_LABELS: Record<AppView, string> = {
-  cashier: 'Cashier',
-  sales: 'Sales',
-  inventory: 'Inventory',
+  cashier: 'Entry',
+  sales: 'Log',
+  inventory: 'Stock',
   categories: 'Categories',
   adjustments: 'Adjustments',
   stores: 'Stores',
-  users: 'Users'
+  users: 'Staff'
 };
+
+/** URL path per tab (label-based): /entry, /log, /stock, … */
+export const VIEW_PATHS: Record<AppView, string> = {
+  cashier: '/entry',
+  sales: '/log',
+  inventory: '/stock',
+  categories: '/categories',
+  adjustments: '/adjustments',
+  stores: '/stores',
+  users: '/staff'
+};
+
+const PATH_TO_VIEW = Object.fromEntries(
+  (Object.entries(VIEW_PATHS) as [AppView, string][]).map(([view, path]) => [path, view])
+) as Record<string, AppView>;
+
+export function normalizePath(pathname: string) {
+  const trimmed = pathname.replace(/\/+$/, '');
+  return trimmed === '' ? '/' : trimmed;
+}
+
+export function viewFromPath(pathname: string): AppView | null {
+  return PATH_TO_VIEW[normalizePath(pathname)] ?? null;
+}
+
+export function pathForView(view: AppView) {
+  return VIEW_PATHS[view];
+}
+
+export function defaultView(access: {
+  canUseCashier: boolean;
+  canManageInventory: boolean;
+}): AppView {
+  if (access.canUseCashier) return 'cashier';
+  if (access.canManageInventory) return 'inventory';
+  return 'sales';
+}
+
+export function isViewAllowed(
+  view: AppView,
+  access: { isAdmin: boolean; canManageInventory: boolean; canUseCashier: boolean }
+) {
+  if (view === 'cashier') return access.canUseCashier;
+  if (view === 'inventory' || view === 'categories' || view === 'adjustments') {
+    return access.canManageInventory;
+  }
+  if (view === 'stores' || view === 'users') return access.isAdmin;
+  return true;
+}
+
+export function writeViewPath(view: AppView, mode: 'push' | 'replace') {
+  const path = pathForView(view);
+  if (normalizePath(window.location.pathname) === path) return;
+  const url = `${path}${window.location.search}${window.location.hash}`;
+  if (mode === 'replace') window.history.replaceState(null, '', url);
+  else window.history.pushState(null, '', url);
+}
 
 export function SideNav({
   view,
@@ -255,7 +311,7 @@ export function SideNav({
           >
             <IconMenu />
           </button>
-          {showLabels && <span className="side-nav-brand">aqeela-pos</span>}
+          {showLabels && <span className="side-nav-brand">aqeela</span>}
         </div>
 
         <nav className="side-nav-links" aria-label="Main">

@@ -88,11 +88,11 @@ export function SplitPaymentModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="split-modal-title" className="modal-title">
-          Split payment
+          Split settlement
         </h2>
 
         <div className="cash-row">
-          <span>Total due</span>
+          <span>Entry total</span>
           <strong className="cash-amount">{formatMoney(totalCents)}</strong>
         </div>
 

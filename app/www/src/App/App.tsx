@@ -8,7 +8,15 @@ import { PwaBanner } from '../PwaBanner/PwaBanner';
 import { db } from '../powerSync';
 import { AdjustmentsScreen } from '../AdjustmentsScreen/AdjustmentsScreen';
 import { SalesScreen } from '../SalesScreen/SalesScreen';
-import { SideNav, VIEW_LABELS, type AppView } from '../SideNav/SideNav';
+import {
+  SideNav,
+  VIEW_LABELS,
+  defaultView,
+  isViewAllowed,
+  viewFromPath,
+  writeViewPath,
+  type AppView
+} from '../SideNav/SideNav';
 import { StoresScreen } from '../StoresScreen/StoresScreen';
 import { resolveStaffAccess, STORE_STAFF_TABLE } from '../schema';
 import './App.css';
@@ -49,8 +57,8 @@ function LoginScreen({ connector }: { connector: SupabaseConnector }) {
 
   return (
     <div className="card login-card">
-      <h1>aqeela-pos</h1>
-      <p className="muted">Sign in to continue</p>
+      <h1>aqeela</h1>
+      <p className="muted">Store ledger — sign in to continue</p>
       {!navigator.onLine && (
         <p className="error">
           Offline — sign-in needs network. If you signed in earlier on this device, refresh after reconnecting once, then
@@ -206,27 +214,37 @@ function AuthedApp({
   const roleList =
     staffRows.length > 0 ? staffRows.map((row) => row.role) : (remoteRoles ?? []);
   const { isAdmin, canManageInventory, canUseCashier } = resolveStaffAccess(roleList);
-  const [view, setView] = useState<AppView>('sales');
+  const access = { isAdmin, canManageInventory, canUseCashier };
+  const [view, setView] = useState<AppView>(
+    () => viewFromPath(window.location.pathname) ?? 'sales'
+  );
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if ((view === 'users' || view === 'stores') && !isAdmin) {
-      setView(canManageInventory ? 'inventory' : canUseCashier ? 'cashier' : 'sales');
-      return;
+    const fromPath = viewFromPath(window.location.pathname);
+    const next =
+      fromPath && isViewAllowed(fromPath, access) ? fromPath : defaultView(access);
+    setView(next);
+    writeViewPath(next, 'replace');
+  }, [isAdmin, canManageInventory, canUseCashier]);
+
+  useEffect(() => {
+    function onPopState() {
+      const fromPath = viewFromPath(window.location.pathname);
+      if (!fromPath) return;
+      setView((current) => (isViewAllowed(fromPath, access) ? fromPath : current));
     }
-    if (
-      (view === 'inventory' || view === 'categories' || view === 'adjustments') &&
-      !canManageInventory
-    ) {
-      setView(canUseCashier ? 'cashier' : 'sales');
-      return;
-    }
-    if (view === 'cashier' && !canUseCashier) {
-      setView(canManageInventory ? 'inventory' : 'sales');
-    }
-  }, [isAdmin, canManageInventory, canUseCashier, view]);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isAdmin, canManageInventory, canUseCashier]);
+
+  function navigate(next: AppView) {
+    if (!isViewAllowed(next, access)) return;
+    setView(next);
+    writeViewPath(next, 'push');
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -263,7 +281,7 @@ function AuthedApp({
         hasSynced={Boolean(status.hasSynced)}
         email={connector.currentSession?.user?.email}
         signingOut={signingOut}
-        onNavigate={setView}
+        onNavigate={navigate}
         onToggle={() => setNavCollapsed((c) => !c)}
         onCloseMobile={() => setMobileNavOpen(false)}
         onSignOut={() => void handleSignOut()}
@@ -392,7 +410,7 @@ export function App() {
     return (
       <div className="page centered">
         <div className="card login-card">
-          <h1>aqeela-pos</h1>
+          <h1>aqeela</h1>
           <p className="error">{startupError}</p>
           <p className="muted">
             Current URL: <code>{window.location.href}</code>

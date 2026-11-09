@@ -19,7 +19,7 @@ export function PaymentConfirmModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const title = `${paymentMethodLabel(method)} payment`;
+  const title = `${paymentMethodLabel(method)} settlement`;
 
   function confirm() {
     if (busy) return;
@@ -40,11 +40,11 @@ export function PaymentConfirmModal({
         </h2>
 
         <div className="cash-row">
-          <span>Total due</span>
+          <span>Entry total</span>
           <strong className="cash-amount">{formatMoney(totalCents)}</strong>
         </div>
 
-        <p className="payment-confirm-message">Place this order?</p>
+        <p className="payment-confirm-message">Log this entry?</p>
 
         <div className="cash-actions">
           <button type="button" className="cash-cancel" onClick={onCancel}>

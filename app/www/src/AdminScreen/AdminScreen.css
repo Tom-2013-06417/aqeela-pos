@@ -36,6 +36,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: var(--surface);
   overflow-x: auto;
 }
@@ -60,7 +61,7 @@
   padding: 0 0.65rem;
   border: none;
   border-right: var(--line-width) solid var(--line);
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--ink);
   font: inherit;
   box-sizing: border-box;
@@ -95,6 +96,7 @@
   opacity: 0;
   cursor: pointer;
   appearance: none;
+  background-image: none;
 }
 
 .inventory-price,
@@ -129,7 +131,7 @@
   width: 1.1rem;
   height: 1.1rem;
   margin: 0;
-  accent-color: #000000;
+  accent-color: var(--fill);
 }
 
 .inventory-head .inventory-stock,
@@ -143,7 +145,6 @@
   flex: 0 0 8.5rem;
   width: 8.5rem;
   min-width: 0;
-  appearance: none;
   cursor: pointer;
 }
 
@@ -185,8 +186,9 @@
   flex: 0 0 5.5rem;
   width: 5.5rem;
   justify-content: center;
-  background: #000000;
-  color: #ffffff;
+  border-radius: 0;
+  background: var(--fill);
+  color: var(--on-fill);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -195,16 +197,16 @@
 }
 
 .inventory-action:hover:not(:disabled) {
-  background: #222222;
+  background: var(--fill-hover);
 }
 
 .inventory-action-secondary {
-  background: #ffffff;
-  color: #000000;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .inventory-action-secondary:hover:not(:disabled) {
-  background: #f0f0f0;
+  background: var(--surface-2);
 }
 
 .inventory-action-secondary:disabled {
@@ -222,12 +224,12 @@
 }
 
 .inventory-head {
-  background: #000000;
+  background: var(--fill);
 }
 
 .inventory-head > * {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -236,6 +238,8 @@
 
 .inventory-add {
   border: var(--line-width) solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .modal-field-checkbox {
@@ -267,8 +271,13 @@
 }
 
 .inventory-row > select {
-  appearance: none;
   cursor: pointer;
+  padding-inline: 0.65rem 2rem;
+  background-color: var(--surface);
+  background-image: var(--select-caret);
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 1.25rem;
 }
 
 .row {
@@ -278,6 +287,8 @@
   margin-top: 0.5rem;
   align-items: stretch;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .row label {
@@ -305,11 +316,14 @@
 .row select {
   height: var(--touch);
   min-height: var(--touch);
-  padding: 0 0.65rem;
   border: none;
-  border-radius: 0;
-  background: var(--surface);
+  border-radius: var(--radius);
+  background-color: var(--surface);
   color: var(--ink);
+}
+
+.row input {
+  padding: 0 0.65rem;
 }
 
 .row button {
@@ -317,9 +331,10 @@
   min-height: var(--touch);
   padding: 0 0.9rem;
   border: none;
+  border-radius: 0;
   border-left: 1px solid var(--line);
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -351,6 +366,9 @@
 .staff-table-wrap {
   overflow-x: auto;
   margin: 1rem 0 2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
 .staff-table {
@@ -363,14 +381,15 @@
 .staff-table button {
   height: var(--touch);
   min-height: var(--touch);
-  padding: 0 0.65rem;
 }
 
 .staff-table button {
+  padding: 0 0.65rem;
   border: none;
+  border-radius: 0;
   border-left: 1px solid var(--line);
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -378,9 +397,9 @@
 }
 
 .staff-table button.secondary {
-  background: #ffffff;
-  color: #000000;
-  border: 1px solid #000000;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--fill);
 }
 
 .staff-table th,
@@ -389,6 +408,10 @@
   padding: 0.35rem 0.4rem;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+}
+
+.staff-table tr:last-child td {
+  border-bottom: none;
 }
 
 .staff-table td:last-child {
@@ -416,9 +439,8 @@
 .store-picker select {
   height: var(--touch);
   min-height: var(--touch);
-  padding: 0 0.65rem;
   border: 1px solid var(--line);
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--ink);
   font: inherit;
   font-size: 1rem;
@@ -441,6 +463,8 @@
   align-items: stretch;
   justify-content: space-between;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .payment-toggles-methods {
@@ -468,7 +492,9 @@
   display: none;
   flex-direction: column;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: var(--surface);
+  overflow: hidden;
 }
 
 .mobile-list-row {
@@ -479,6 +505,7 @@
   min-height: var(--touch);
   padding: 0.55rem 0.75rem;
   border: none;
+  border-radius: 0;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
@@ -530,9 +557,10 @@
   min-height: var(--touch);
   margin-top: 0;
   border: none;
+  border-radius: 0;
   border-top: 1px solid var(--line);
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font: inherit;
   font-weight: 700;
   text-transform: uppercase;
@@ -541,7 +569,7 @@
 }
 
 .mobile-add-btn:hover:not(:disabled) {
-  background: #222222;
+  background: var(--fill-hover);
 }
 
 .mobile-add-btn:disabled {
@@ -591,8 +619,8 @@
   min-height: var(--touch);
   padding: 0 0.65rem;
   border: 1px solid var(--line);
-  background: #ffffff;
-  color: #000000;
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-weight: 700;
   text-transform: uppercase;

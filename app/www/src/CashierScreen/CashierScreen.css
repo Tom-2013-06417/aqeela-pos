@@ -27,7 +27,7 @@
   width: 100%;
   padding: 0.75rem 0.9rem;
   border: var(--line-width) solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
   font-size: 1.05rem;
@@ -72,10 +72,10 @@
   min-height: 2.25rem;
   max-height: 2.75rem;
   background: var(--product-color, #dddddd);
-  color: #000000;
+  color: var(--ink);
   font-size: 1.05rem;
   font-weight: 700;
-  border-bottom: var(--line-width) solid #000000;
+  border-bottom: var(--line-width) solid var(--fill);
 }
 
 .product-tile-body {
@@ -98,8 +98,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.25;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
 }
 
 .product-tile-stock {
@@ -139,13 +138,13 @@
   min-height: var(--qty-touch);
   padding: 0.35rem 0.25rem;
   border: none;
+  border-radius: 0;
   border-right: var(--line-width) solid var(--line);
   background: var(--surface);
   color: var(--ink);
   font-weight: 700;
   font-size: 1.35rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   cursor: pointer;
 }
 
@@ -154,8 +153,8 @@
 }
 
 .rice-preset:hover:not(:disabled) {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--surface);
 }
 
 .rice-preset:disabled {
@@ -199,6 +198,7 @@
   width: var(--qty-touch);
   height: var(--qty-touch);
   border: none;
+  border-radius: 0;
   border-right: var(--line-width) solid var(--line);
   background: var(--surface);
   color: var(--ink);
@@ -213,8 +213,8 @@
 }
 
 .qty-btn:hover:not(:disabled) {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
 }
 
 .qty-value {
@@ -223,7 +223,7 @@
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 1.35rem;
-  background: #ffffff;
+  background: var(--surface);
   padding: 0.35rem 0;
 }
 
@@ -232,7 +232,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  background: #ffffff;
+  background: var(--surface);
   height: var(--qty-touch);
 }
 
@@ -405,18 +405,23 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .cashier-total strong {
   font-family: var(--font-mono);
-  font-size: 1.7rem;
+  font-size: 1.55rem;
   letter-spacing: -0.02em;
   text-transform: none;
+}
+
+.cashier-pay-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.85rem;
 }
 
 .cashier-pay-actions {
@@ -432,60 +437,42 @@
 .pay-split {
   flex: 1 1 6rem;
   min-height: var(--pay-height);
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: 0;
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--line-width) solid var(--line);
+  box-shadow: inset 3px 0 0 var(--ink);
 }
 
 .pay-cash {
-  background: #000000;
-  color: #ffffff;
-  border: var(--line-width) solid #000000;
+  box-shadow: inset 3px 0 0 var(--fill);
 }
 
 .pay-gcash {
-  background: #0033cc;
-  color: #ffffff;
-  border: var(--line-width) solid #000000;
+  box-shadow: inset 3px 0 0 #1d4ed8;
 }
 
 .pay-paymongo {
-  background: #00665c;
-  color: #ffffff;
-  border: var(--line-width) solid #000000;
+  box-shadow: inset 3px 0 0 #0f766e;
 }
 
 .pay-card {
-  background: #6a1b9a;
-  color: #ffffff;
-  border: var(--line-width) solid #000000;
+  box-shadow: inset 3px 0 0 #57534e;
 }
 
 .pay-split {
-  background: #ffffff;
-  color: #000000;
-  border: var(--line-width) solid #000000;
+  box-shadow: inset 3px 0 0 #a8a29e;
 }
 
-.pay-cash:hover:not(:disabled) {
-  background: #222222;
-}
-
-.pay-gcash:hover:not(:disabled) {
-  background: #002299;
-}
-
-.pay-paymongo:hover:not(:disabled) {
-  background: #004f47;
-}
-
-.pay-card:hover:not(:disabled) {
-  background: #4a126c;
-}
-
+.pay-cash:hover:not(:disabled),
+.pay-gcash:hover:not(:disabled),
+.pay-paymongo:hover:not(:disabled),
+.pay-card:hover:not(:disabled),
 .pay-split:hover:not(:disabled) {
-  background: #eeeeee;
+  background: var(--surface-2);
 }
 
 @media (max-width: 700px) {
@@ -607,8 +594,8 @@
     min-height: 3.5rem;
     padding: 0.55rem 0.85rem;
     border-top: var(--line-width) solid var(--line);
-    background: #000000;
-    color: #ffffff;
+    background: var(--fill);
+    color: var(--on-fill);
     font: inherit;
     cursor: pointer;
   }
@@ -635,7 +622,7 @@
   .cashier-order-bar-cta {
     flex-shrink: 0;
     padding: 0.45rem 0.7rem;
-    border: var(--line-width) solid #ffffff;
+    border: var(--line-width) solid var(--on-fill);
     font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;

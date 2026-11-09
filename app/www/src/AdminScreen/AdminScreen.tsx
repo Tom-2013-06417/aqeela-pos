@@ -654,7 +654,7 @@ export function AdminScreen({
         serializePaymentMethods(toggles),
         store.id
       ]);
-      setMessage(`Updated payment methods for ${store.name}`);
+      setMessage(`Updated settlement methods for ${store.name}`);
       setPaymentDraft((prev) => {
         const next = { ...prev };
         delete next[store.id];
@@ -777,16 +777,16 @@ export function AdminScreen({
 
   const headerTitle =
     section === 'users'
-      ? 'Users'
+      ? 'Staff'
       : section === 'inventory'
-        ? 'Inventory'
+        ? 'Stock'
         : section === 'categories'
           ? 'Categories'
           : 'Admin';
 
   const headerHint =
     section === 'users'
-      ? 'Manage staff and payment methods per location'
+      ? 'Manage staff and settlement methods per location'
       : section === 'categories'
         ? 'Organize products with catalog categories. Rice is a built-in preset for kg sales.'
         : 'One catalog. Stock is per location — leave a cell blank if the product is not carried there.';
@@ -930,7 +930,7 @@ export function AdminScreen({
 
       {showInventory && (
         <section className="inventory-section">
-          {section === 'all' && <h2>Inventory</h2>}
+            {section === 'all' && <h2>Stock</h2>}
           {section === 'all' && (
             <p className="muted">
               Edit name, price, unit, and stock per location. Enter damaged qty to reduce stock as a
@@ -1274,8 +1274,8 @@ export function AdminScreen({
       {showUsers && (
         <>
           <section className="card">
-            {section === 'all' && <h2>Payment methods</h2>}
-            {section !== 'all' && <h2>Payment methods</h2>}
+            {section === 'all' && <h2>Settlement methods</h2>}
+            {section !== 'all' && <h2>Settlement methods</h2>}
             <p className="muted">Choose which tender buttons cashiers see at each location.</p>
 
             {stores.map((store) => {
@@ -1317,7 +1317,7 @@ export function AdminScreen({
           </section>
 
           <section className="card">
-            {section === 'all' && <h2>Users</h2>}
+            {section === 'all' && <h2>Staff</h2>}
             <p className="muted">
               Create the Auth user in Supabase first (Auth → Users), copy their UUID, then link them here.
               Staff list requires network. Pick a location to manage its staff.

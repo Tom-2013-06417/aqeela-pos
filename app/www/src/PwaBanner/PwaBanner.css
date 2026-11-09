@@ -4,8 +4,8 @@
   justify-content: center;
   gap: 0.75rem;
   padding: 0.55rem 1rem;
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font-size: 0.9rem;
   border-bottom: 1px solid #ffcc00;
   letter-spacing: 0.02em;
@@ -14,9 +14,9 @@
 
 .pwa-banner button {
   background: #ffcc00;
-  color: #000000;
+  color: var(--ink);
   border: 1px solid #ffffff;
-  border-radius: 0;
+  border-radius: var(--radius);
   padding: 0.35rem 0.75rem;
   font-weight: 700;
   text-transform: uppercase;

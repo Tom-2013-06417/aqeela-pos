@@ -145,7 +145,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   }
 
   async function deleteSale(saleId: string) {
-    if (!window.confirm('Delete this sale and all its line items?')) return;
+    if (!window.confirm('Delete this entry and all its line items?')) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -159,16 +159,16 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
         delete next[saleId];
         return next;
       });
-      setMessage('Sale deleted.');
+      setMessage('Entry deleted.');
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to delete sale.');
+      setMessage(err instanceof Error ? err.message : 'Failed to delete entry.');
     } finally {
       setBusy(false);
     }
   }
 
   async function clearAllSales() {
-    if (!window.confirm('Clear all sales history on this device? This cannot be undone.')) return;
+    if (!window.confirm('Clear all entry history on this device? This cannot be undone.')) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -179,9 +179,9 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
       });
       setExpandedSaleIds({});
       setPage(1);
-      setMessage('All sales history cleared.');
+      setMessage('All entry history cleared.');
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to clear sales history.');
+      setMessage(err instanceof Error ? err.message : 'Failed to clear entry history.');
     } finally {
       setBusy(false);
     }
@@ -190,11 +190,11 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="panel-view" ref={viewRef}>
       <header className="panel-view-header">
-        <h1>Sales</h1>
+        <h1>Log</h1>
         <p className="muted">
           {storeFilter
-            ? `Orders for ${stores.find((s) => s.id === storeFilter)?.name ?? 'this store'}`
-            : 'Recent orders on this device'}
+            ? `Entries for ${stores.find((s) => s.id === storeFilter)?.name ?? 'this store'}`
+            : 'Recent entries on this device'}
         </p>
       </header>
 
@@ -231,7 +231,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                   disabled={busy || (totalSales === 0 && sales.length === 0)}
                   onClick={() => void clearAllSales()}
                 >
-                  Clear all sales
+                  Clear all entries
                 </button>
               </div>
             )}
@@ -239,7 +239,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
         )}
         {isLoading && sales.length === 0 && <p className="muted">Loading…</p>}
         {!isLoading && sales.length === 0 && totalSales === 0 && (
-          <p className="muted">{storeFilter ? 'No sales for this store.' : 'No sales yet.'}</p>
+          <p className="muted">{storeFilter ? 'No entries for this store.' : 'No entries yet.'}</p>
         )}
         <ul className="sales-list">
           {sales.map((sale) => {
@@ -329,7 +329,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                         disabled={busy}
                         onClick={() => void deleteSale(sale.id)}
                       >
-                        Delete sale
+                        Delete entry
                       </button>
                     )}
                   </div>
@@ -339,7 +339,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
           })}
         </ul>
         {totalSales > 0 && (
-          <nav className="sales-pagination" aria-label="Sales pages">
+          <nav className="sales-pagination" aria-label="Log pages">
             {pages.map((pageNumber) => (
               <button
                 key={pageNumber}

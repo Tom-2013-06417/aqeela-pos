@@ -28,9 +28,10 @@
 
 .split-tender-remove {
   padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
@@ -51,32 +52,32 @@
 .split-method {
   flex: 1 1 5.5rem;
   min-height: 2.5rem;
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: 0;
   background: var(--surface);
   color: var(--ink);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
 }
 
 .split-method[aria-pressed='true'] {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
+  background: var(--fill);
+  color: var(--surface);
+  border-color: var(--ink);
 }
 
 .split-add-btn {
   min-height: 2.75rem;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: 0;
   background: var(--surface);
   color: var(--ink);
-  border: 1px solid #000000;
+  border: 1px solid var(--line);
 }
 
 .split-add-btn:hover:not(:disabled) {
-  background: #eeeeee;
+  background: var(--surface-2);
 }

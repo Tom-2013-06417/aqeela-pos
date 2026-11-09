@@ -103,7 +103,7 @@ export function serializePaymentMethods(toggles: PaymentMethodToggles): string {
 }
 
 export function paymentMethodLabel(method: string) {
-  if (method === 'paymongo_qr') return 'Paymongo QR';
+  if (method === 'paymongo_qr') return 'QR transfer';
   if (method === 'gcash') return 'GCash';
   if (method === 'cash') return 'Cash';
   if (method === 'card') return 'Card';

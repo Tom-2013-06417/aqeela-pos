@@ -20,12 +20,13 @@
 }
 
 .stores-filter-btn.active {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
 }
 
 .stores-list {
   border: var(--line-width, 1px) solid var(--line);
+  border-radius: var(--radius);
   margin-bottom: 1.25rem;
   overflow-x: auto;
 }
@@ -76,15 +77,16 @@
   width: 1.1rem;
   height: 1.1rem;
   margin: 0;
-  accent-color: #000000;
+  accent-color: var(--fill);
 }
 
 .stores-action {
   flex: 0 0 6.5rem;
   width: 6.5rem;
   justify-content: center;
-  background: #000000;
-  color: #ffffff;
+  border-radius: 0;
+  background: var(--fill);
+  color: var(--on-fill);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -93,30 +95,30 @@
 }
 
 .stores-action-secondary {
-  background: #ffffff;
-  color: #000000;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .stores-action-secondary:hover:not(:disabled) {
-  background: #f0f0f0;
+  background: var(--surface-2);
 }
 
 .stores-action:hover:not(:disabled) {
-  background: #222222;
+  background: var(--fill-hover);
 }
 
 .stores-action-secondary:hover:not(:disabled) {
-  background: #eeeeee;
-  color: #000000;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .stores-head {
-  background: #000000;
+  background: var(--fill);
 }
 
 .stores-head > * {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -132,6 +134,8 @@
 
 .stores-add-row {
   border: var(--line-width, 1px) solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .stores-inactive-meta {
@@ -142,8 +146,10 @@
   display: none;
   flex-direction: column;
   border: var(--line-width, 1px) solid var(--line);
+  border-radius: var(--radius);
   background: var(--surface);
   margin-bottom: 1rem;
+  overflow: hidden;
 }
 
 .stores-screen-mobile-list .mobile-list-row {
@@ -189,8 +195,8 @@
   min-height: var(--touch);
   border: none;
   border-top: var(--line-width, 1px) solid var(--line);
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font: inherit;
   font-weight: 700;
   text-transform: uppercase;

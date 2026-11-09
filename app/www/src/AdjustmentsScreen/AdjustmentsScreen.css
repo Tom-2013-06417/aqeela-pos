@@ -17,15 +17,14 @@
 .adj-filter select {
   width: 100%;
   min-height: var(--touch);
-  padding: 0 0.75rem;
   border: var(--line-width, 1px) solid var(--line);
-  background: var(--surface);
   color: var(--ink);
   font: inherit;
 }
 
 .adj-table-wrap {
   border: var(--line-width, 1px) solid var(--line);
+  border-radius: var(--radius);
   overflow-x: auto;
   background: var(--surface);
 }
@@ -45,8 +44,8 @@
 }
 
 .adj-table th {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -78,7 +77,9 @@
   margin: 0;
   padding: 0;
   border: var(--line-width, 1px) solid var(--line);
+  border-radius: var(--radius);
   background: var(--surface);
+  overflow: hidden;
 }
 
 .adj-mobile-item {
@@ -131,8 +132,8 @@
 }
 
 .adj-pagination button[aria-current='page'] {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
 }
 
 @media (max-width: 700px) {

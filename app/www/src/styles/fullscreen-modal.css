@@ -19,6 +19,7 @@
   padding: 0;
   background: var(--surface);
   border: none;
+  border-radius: 0;
   gap: 0;
 }
 
@@ -97,22 +98,22 @@
 }
 
 .modal-card.full-screen .modal-footer-primary {
-  background: #000000;
-  color: #ffffff;
+  background: var(--fill);
+  color: var(--on-fill);
 }
 
 .modal-card.full-screen .modal-footer-primary:hover:not(:disabled) {
-  background: #222222;
+  background: var(--fill-hover);
 }
 
 .modal-card.full-screen .modal-footer-danger {
-  background: #ffffff;
-  color: #000000;
+  background: var(--surface);
+  color: var(--ink);
   border-right: 1px solid var(--line);
 }
 
 .modal-card.full-screen .modal-footer-danger:hover:not(:disabled) {
-  background: #f0f0f0;
+  background: var(--surface-2);
 }
 
 .modal-card.full-screen .modal-footer-danger:disabled {
@@ -138,12 +139,15 @@
 .modal-field select {
   width: 100%;
   min-height: var(--touch);
-  padding: 0 0.65rem;
   border: 1px solid var(--line);
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--ink);
   font: inherit;
   box-sizing: border-box;
+}
+
+.modal-field input {
+  padding: 0 0.65rem;
 }
 
 .modal-color-row {

@@ -11,11 +11,11 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'aqeela-pos',
-        short_name: 'aqeela-pos',
-        description: 'Offline-first point of sale',
-        theme_color: '#2563eb',
-        background_color: '#f4f6f8',
+        name: 'aqeela ledger',
+        short_name: 'aqeela',
+        description: 'Offline store ledger for stock and sale logging',
+        theme_color: '#2f2c2a',
+        background_color: '#f3f3f1',
         display: 'standalone',
         start_url: '/',
         icons: [

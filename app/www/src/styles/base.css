@@ -4,41 +4,47 @@
   --font: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f0f0f0;
-  --ink: #000000;
-  --muted: #333333;
-  --line: #000000;
-  --line-strong: #000000;
+  /* Ledger / notebook — cool paper, not register chrome */
+  --bg: #f3f3f1;
+  --surface: #fafaf9;
+  --surface-2: #ebebe8;
+  --ink: #353230;
+  --muted: #57534e;
+  --line: #57534e;
+  --line-strong: #2f2c2a;
 
-  --nav-bg: #000000;
-  --nav-ink: #ffffff;
-  --nav-muted: #dddddd;
-  --nav-active: #ffffff;
+  /* Solid chrome (buttons, table headers) — dark gray, not pure black */
+  --fill: #2f2c2a;
+  --fill-hover: #45403c;
+  --on-fill: #fafaf9;
+
+  --nav-bg: #2f2c2a;
+  --nav-ink: #fafaf9;
+  --nav-muted: #a8a29e;
+  --nav-active: #e7e5e4;
   --nav-accent: #00e676;
 
-  --accent: #000000;
-  --accent-2: #0033cc;
-  --danger: #cc0000;
-  --ok: #006600;
-  --warn: #996600;
+  --accent: #2f2c2a;
+  --accent-2: #57534e;
+  --danger: #b91c1c;
+  --ok: #3f6212;
+  --warn: #a16207;
 
   --nav-width: 226px;
   --nav-width-collapsed: 4.25rem;
   --order-width: 22rem;
 
-  --radius: 0;
+  --radius: 8px;
   --touch: 2.75rem;
   --qty-touch: 3.75rem;
-  --pay-height: 4.5rem;
-  --line-width: 1.5px;
+  --pay-height: 3.5rem;
+  --line-width: 1px;
   --font-size: 1.0625rem;
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2357534e' d='M4.2 6.2a.75.75 0 0 1 1.06 0L8 8.94l2.74-2.74a.75.75 0 1 1 1.06 1.06l-3.27 3.27a.75.75 0 0 1-1.06 0L4.2 7.26a.75.75 0 0 1 0-1.06z'/%3E%3C/svg%3E");
 }
 
 * {
   box-sizing: border-box;
-  border-radius: 0 !important;
 }
 
 html,
@@ -58,8 +64,22 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+  border-radius: var(--radius);
+}
+
+/* Custom caret — native macOS arrows ignore padding and sit on the edge */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline: 0.65rem 2rem;
+  background-color: var(--surface);
+  background-image: var(--select-caret);
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 1.25rem;
 }
 
 button {

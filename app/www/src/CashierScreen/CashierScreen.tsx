@@ -225,7 +225,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     }
 
     if (tenders.length === 0) {
-      setMessage('Add a payment first');
+      setMessage('Choose a settlement method first');
       return;
     }
 
@@ -315,12 +315,12 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         }
       });
 
-      setMessage(`Order placed (${paymentMethodLabel(saleMethod)}) — ${formatMoney(total)}`);
+      setMessage(`Entry logged (${paymentMethodLabel(saleMethod)}) — ${formatMoney(total)}`);
       setCartQty({});
       setDraftQtyInput({});
       setOrderSheetOpen(false);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Sale failed');
+      setMessage(err instanceof Error ? err.message : 'Could not log entry');
     } finally {
       setBusy(false);
     }
@@ -531,7 +531,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           </label>
           <StatusBanner
             message={message}
-            variant={message?.startsWith('Order') ? 'success' : 'error'}
+            variant={message?.startsWith('Entry logged') ? 'success' : 'error'}
             onDismiss={() => setMessage(null)}
           />
         </div>
@@ -589,13 +589,13 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
       <aside
         className={`cashier-order ${orderSheetOpen ? 'sheet-open' : ''}`}
-        aria-label="Current order"
+        aria-label="Current entry"
       >
         <header className="cashier-order-header">
-          <h2>Order</h2>
+          <h2>This entry</h2>
           <span className="muted">
             {storeName ? `${storeName} · ` : ''}
-            {itemCount === 0 ? 'Empty' : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
+            {itemCount === 0 ? 'Empty' : `${formatKg(itemCount)} line${itemCount === 1 ? '' : 's'}`}
           </span>
           <button
             type="button"
@@ -608,7 +608,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
         <div className="cashier-order-list">
           {cartLines.length === 0 ? (
-            <p className="cashier-order-empty muted">Tap + on a product to add it.</p>
+            <p className="cashier-order-empty muted">Add lines from the catalog to start an entry.</p>
           ) : (
             <ul>
               {cartLines.map(({ product, qty }) => {
@@ -638,12 +638,13 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
         <footer className="cashier-order-footer">
           <div className="cashier-total">
-            <span>Total</span>
+            <span>Entry total</span>
             <strong>{formatMoney(totalCents)}</strong>
           </div>
+          <p className="cashier-pay-label muted">Log how it was settled</p>
           <div className="cashier-pay-actions">
             {enabledMethods.length === 0 && (
-              <p className="muted">No payment methods enabled for this location.</p>
+              <p className="muted">No settlement methods enabled for this location.</p>
             )}
             {enabledMethods.includes('cash') && (
               <button
@@ -672,7 +673,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 disabled={busy || cartLines.length === 0}
                 onClick={() => openPaymentConfirm('paymongo_qr')}
               >
-                Paymongo QR
+                QR transfer
               </button>
             )}
             {enabledMethods.includes('card') && (
@@ -707,11 +708,11 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         >
           <span className="cashier-order-bar-count">
             {itemCount === 0
-              ? 'Empty'
-              : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
+              ? 'Empty entry'
+              : `${formatKg(itemCount)} line${itemCount === 1 ? '' : 's'}`}
           </span>
           <span className="cashier-order-bar-total">{formatMoney(totalCents)}</span>
-          <span className="cashier-order-bar-cta">View</span>
+          <span className="cashier-order-bar-cta">Open</span>
         </button>
       )}
 
