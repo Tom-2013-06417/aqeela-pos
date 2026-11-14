@@ -7,6 +7,8 @@ import {
   productColorHex,
   type ProductColor
 } from '../productColors';
+import { CorrectCountModal } from '../CorrectCountModal/CorrectCountModal';
+import { ReceiveStockModal } from '../ReceiveStockModal/ReceiveStockModal';
 import { StatusBanner } from '../StatusBanner/StatusBanner';
 import {
   CATEGORIES_TABLE,
@@ -86,8 +88,14 @@ export function AdminScreen({
   const status = useStatus();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [receiveStoreId, setReceiveStoreId] = useState('');
+  const [receiveProductId, setReceiveProductId] = useState('');
+  const [countModal, setCountModal] = useState<{
+    product: ProductRecord;
+    store: StoreRecord;
+  } | null>(null);
 
-  const [draftStock, setDraftStock] = useState<Record<string, string>>({});
   const [draftDamage, setDraftDamage] = useState<Record<string, string>>({});
   const [draftName, setDraftName] = useState<Record<string, string>>({});
   const [draftPrice, setDraftPrice] = useState<Record<string, string>>({});
@@ -215,12 +223,18 @@ export function AdminScreen({
   }
 
   function stockValue(productId: string, storeId: string) {
-    const key = stockKey(productId, storeId);
-    if (Object.prototype.hasOwnProperty.call(draftStock, key)) {
-      return draftStock[key];
-    }
-    const level = levelsByKey.get(key);
+    const level = levelsByKey.get(stockKey(productId, storeId));
     return level ? formatQty(level.qty ?? '0') : '';
+  }
+
+  function openReceive(productId?: string, storeId?: string) {
+    setReceiveStoreId(storeId || receiveStoreId || inventoryStores[0]?.id || '');
+    setReceiveProductId(productId ?? '');
+    setShowReceiveModal(true);
+  }
+
+  function openFixCount(product: ProductRecord, store: StoreRecord) {
+    setCountModal({ product, store });
   }
 
   function damageValue(productId: string, storeId: string) {
@@ -283,13 +297,6 @@ export function AdminScreen({
       delete next[productId];
       return next;
     });
-    setDraftStock((prev) => {
-      const next = { ...prev };
-      for (const store of inventoryStores) {
-        delete next[stockKey(productId, store.id)];
-      }
-      return next;
-    });
     setDraftDamage((prev) => {
       const next = { ...prev };
       for (const store of inventoryStores) {
@@ -320,15 +327,14 @@ export function AdminScreen({
       return;
     }
 
-    const locationQtys: {
+    const locationDamage: {
       storeId: string;
       storeName: string;
-      qty: number | null;
       damage: number;
-      level?: InventoryLevelRecord;
+      level: InventoryLevelRecord;
+      currentQty: number;
     }[] = [];
     for (const store of inventoryStores) {
-      const raw = stockValue(product.id, store.id).trim();
       const damageRaw = damageValue(product.id, store.id).trim();
       const level = levelsByKey.get(stockKey(product.id, store.id));
       let damage = 0;
@@ -339,29 +345,25 @@ export function AdminScreen({
           return;
         }
       }
-      if (raw === '') {
-        if (damage > 0) {
-          setMessage(`Set stock at ${store.name} before recording damage`);
-          return;
-        }
-        locationQtys.push({ storeId: store.id, storeName: store.name ?? '', qty: null, damage: 0, level });
-        continue;
-      }
-      const qty = Number(raw);
-      if (!Number.isFinite(qty) || qty < 0) {
-        setMessage(`Enter a valid stock quantity for ${store.name}`);
+      if (damage === 0) continue;
+      if (!level) {
+        setMessage(
+          `No stock at ${store.name} yet — use Add stock or Fix count before recording damage`
+        );
         return;
       }
-      if (damage > qty) {
+      const currentQty = Number(level.qty ?? 0);
+      if (!Number.isFinite(currentQty) || damage > currentQty) {
         setMessage(`Damaged qty cannot exceed stock at ${store.name}`);
         return;
       }
-      locationQtys.push({ storeId: store.id, storeName: store.name ?? '', qty, damage, level });
-    }
-
-    if (!locationQtys.some((row) => row.qty != null)) {
-      setMessage('Assign stock at least at one location (use 0 if out of stock)');
-      return;
+      locationDamage.push({
+        storeId: store.id,
+        storeName: store.name ?? '',
+        damage,
+        level,
+        currentQty
+      });
     }
 
     let kgPerSack: string | null = null;
@@ -402,44 +404,28 @@ export function AdminScreen({
           ]
         );
 
-        for (const row of locationQtys) {
-          if (row.qty == null) {
-            if (row.level) {
-              await tx.execute(`DELETE FROM ${INVENTORY_LEVELS_TABLE} WHERE id = ?`, [row.level.id]);
-            }
-            continue;
-          }
-          const finalQty = row.qty - row.damage;
-          const qtyStr = finalQty.toFixed(3);
-          if (row.level) {
-            await tx.execute(`UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`, [
-              qtyStr,
-              row.level.id
-            ]);
-          } else {
-            await tx.execute(
-              `INSERT INTO ${INVENTORY_LEVELS_TABLE} (id, product_id, store_id, qty) VALUES (?, ?, ?, ?)`,
-              [newInventoryLevelId(), product.id, row.storeId, qtyStr]
-            );
-          }
-          if (row.damage > 0) {
-            damageLogged += 1;
-            await tx.execute(
-              `INSERT INTO ${STOCK_ADJUSTMENTS_TABLE}
-                 (id, product_id, store_id, qty_delta, reason, note, created_by, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                newStockAdjustmentId(),
-                product.id,
-                row.storeId,
-                (-row.damage).toFixed(3),
-                'damage',
-                null,
-                userId || null,
-                now
-              ]
-            );
-          }
+        for (const row of locationDamage) {
+          const finalQty = row.currentQty - row.damage;
+          await tx.execute(`UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`, [
+            finalQty.toFixed(3),
+            row.level.id
+          ]);
+          damageLogged += 1;
+          await tx.execute(
+            `INSERT INTO ${STOCK_ADJUSTMENTS_TABLE}
+               (id, product_id, store_id, qty_delta, reason, note, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              newStockAdjustmentId(),
+              product.id,
+              row.storeId,
+              (-row.damage).toFixed(3),
+              'damage',
+              null,
+              userId || null,
+              now
+            ]
+          );
         }
       });
       setMessage(
@@ -538,6 +524,23 @@ export function AdminScreen({
             `INSERT INTO ${INVENTORY_LEVELS_TABLE} (id, product_id, store_id, qty) VALUES (?, ?, ?, ?)`,
             [newInventoryLevelId(), id, row.storeId, row.qty.toFixed(3)]
           );
+          if (row.qty > 0) {
+            await tx.execute(
+              `INSERT INTO ${STOCK_ADJUSTMENTS_TABLE}
+                 (id, product_id, store_id, qty_delta, reason, note, created_by, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                newStockAdjustmentId(),
+                id,
+                row.storeId,
+                row.qty.toFixed(3),
+                'correction',
+                'Opening count',
+                userId || null,
+                now
+              ]
+            );
+          }
         }
       });
       setMessage(`Added ${name}`);
@@ -654,7 +657,7 @@ export function AdminScreen({
         serializePaymentMethods(toggles),
         store.id
       ]);
-      setMessage(`Updated settlement methods for ${store.name}`);
+      setMessage(`Updated payment options for ${store.name}`);
       setPaymentDraft((prev) => {
         const next = { ...prev };
         delete next[store.id];
@@ -786,7 +789,7 @@ export function AdminScreen({
 
   const headerHint =
     section === 'users'
-      ? 'Manage staff and settlement methods per location'
+      ? 'Manage staff and which payment options each store uses'
       : section === 'categories'
         ? 'Organize products with catalog categories. Rice is a built-in preset for kg sales.'
         : 'One catalog. Stock is per location — leave a cell blank if the product is not carried there.';
@@ -796,7 +799,9 @@ export function AdminScreen({
     message?.startsWith('Added') ||
     message?.startsWith('Deleted') ||
     message?.startsWith('Staff') ||
-    message?.startsWith('Role');
+    message?.startsWith('Role') ||
+    message?.startsWith('Received') ||
+    message?.startsWith('Added');
 
   return (
     <div className="panel-view">
@@ -933,10 +938,39 @@ export function AdminScreen({
             {section === 'all' && <h2>Stock</h2>}
           {section === 'all' && (
             <p className="muted">
-              Edit name, price, unit, and stock per location. Enter damaged qty to reduce stock as a
-              loss on save. Uncheck For sale for internal supplies. Blank stock means not carried
-              there.
+              Edit name, price, and unit. New deliveries go through Add stock. Use Fix when the
+              shelf count is wrong. Enter damaged qty and Save to log a loss. Blank stock means not
+              carried there.
             </p>
+          )}
+
+          {section === 'inventory' && (
+            <div className="inventory-receive-bar">
+              {inventoryStores.length > 1 && (
+                <label className="inventory-receive-store">
+                  <span className="sr-only">Receive into store</span>
+                  <select
+                    value={receiveStoreId || inventoryStores[0]?.id || ''}
+                    onChange={(e) => setReceiveStoreId(e.target.value)}
+                    disabled={busy}
+                  >
+                    {inventoryStores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <button
+                type="button"
+                className="inventory-receive-btn"
+                disabled={busy || !hasStore || inventoryStores.length === 0}
+                onClick={() => openReceive()}
+              >
+                Add stock
+              </button>
+            </div>
           )}
 
           <div className="inventory-list desktop-only">
@@ -947,7 +981,7 @@ export function AdminScreen({
               <span className="inventory-price">Price (₱)</span>
               {inventoryStores.map((store) => (
                 <Fragment key={store.id}>
-                  <span className="inventory-stock" title={store.name ?? undefined}>
+                  <span className="inventory-stock inventory-stock-cell" title={store.name ?? undefined}>
                     {store.name}
                   </span>
                   <span className="inventory-damage" title={`Damaged at ${store.name}`}>
@@ -1029,38 +1063,42 @@ export function AdminScreen({
                     value={priceVal}
                     onChange={(e) => setDraftPrice((prev) => ({ ...prev, [product.id]: e.target.value }))}
                   />
-                  {inventoryStores.map((store) => (
-                    <Fragment key={store.id}>
-                      <input
-                        className="inventory-stock"
-                        aria-label={`Stock for ${product.name} at ${store.name}${rice ? ' (kg)' : ''}`}
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="—"
-                        value={stockValue(product.id, store.id)}
-                        onChange={(e) =>
-                          setDraftStock((prev) => ({
-                            ...prev,
-                            [stockKey(product.id, store.id)]: e.target.value
-                          }))
-                        }
-                      />
-                      <input
-                        className="inventory-damage"
-                        aria-label={`Damaged qty for ${product.name} at ${store.name}`}
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="0"
-                        value={damageValue(product.id, store.id)}
-                        onChange={(e) =>
-                          setDraftDamage((prev) => ({
-                            ...prev,
-                            [damageKey(product.id, store.id)]: e.target.value
-                          }))
-                        }
-                      />
-                    </Fragment>
-                  ))}
+                  {inventoryStores.map((store) => {
+                    const qtyLabel = stockValue(product.id, store.id);
+                    return (
+                      <Fragment key={store.id}>
+                        <div
+                          className="inventory-stock inventory-stock-cell"
+                          title={`${store.name}${rice ? ' (kg)' : ''}`}
+                        >
+                          <span className="inventory-stock-qty">{qtyLabel || '—'}</span>
+                          <button
+                            type="button"
+                            className="inventory-stock-fix"
+                            disabled={busy}
+                            aria-label={`Fix count for ${product.name} at ${store.name}`}
+                            onClick={() => openFixCount(product, store)}
+                          >
+                            Fix
+                          </button>
+                        </div>
+                        <input
+                          className="inventory-damage"
+                          aria-label={`Damaged qty for ${product.name} at ${store.name}`}
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={damageValue(product.id, store.id)}
+                          onChange={(e) =>
+                            setDraftDamage((prev) => ({
+                              ...prev,
+                              [damageKey(product.id, store.id)]: e.target.value
+                            }))
+                          }
+                        />
+                      </Fragment>
+                    );
+                  })}
                   <input
                     className="inventory-unit inventory-unit-input"
                     aria-label={`Unit for ${product.name}`}
@@ -1220,10 +1258,11 @@ export function AdminScreen({
                 <Fragment key={store.id}>
                   <input
                     className="inventory-stock"
-                    aria-label={`New product stock at ${store.name}`}
+                    aria-label={`Opening count at ${store.name}`}
                     type="text"
                     inputMode="decimal"
                     placeholder={store.name ?? ''}
+                    title="Opening shelf count (not a supplier delivery)"
                     value={newStockByStore[store.id] ?? ''}
                     onChange={(e) =>
                       setNewStockByStore((prev) => ({ ...prev, [store.id]: e.target.value }))
@@ -1274,8 +1313,8 @@ export function AdminScreen({
       {showUsers && (
         <>
           <section className="card">
-            {section === 'all' && <h2>Settlement methods</h2>}
-            {section !== 'all' && <h2>Settlement methods</h2>}
+            {section === 'all' && <h2>Payment options</h2>}
+            {section !== 'all' && <h2>Payment options</h2>}
             <p className="muted">Choose which tender buttons cashiers see at each location.</p>
 
             {stores.map((store) => {
@@ -1634,47 +1673,69 @@ export function AdminScreen({
                 </label>
                 {inventoryStores.map((store) => (
                   <div key={store.id} className="modal-stock-group">
-                    <label className="modal-field">
-                      <span>Stock · {store.name}{rice ? ' (kg)' : ''}</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="—"
-                        value={
-                          product
-                            ? stockValue(product.id, store.id)
-                            : (newStockByStore[store.id] ?? '')
-                        }
-                        onChange={(e) => {
-                          if (product) {
-                            setDraftStock((prev) => ({
-                              ...prev,
-                              [stockKey(product.id, store.id)]: e.target.value
-                            }));
-                          } else {
-                            setNewStockByStore((prev) => ({
-                              ...prev,
-                              [store.id]: e.target.value
-                            }));
-                          }
-                        }}
-                      />
-                    </label>
-                    {product && (
+                    {product ? (
+                      <>
+                        <div className="modal-field modal-stock-readonly">
+                          <span>Stock · {store.name}{rice ? ' (kg)' : ''}</span>
+                          <div className="modal-stock-actions">
+                            <strong className="modal-stock-qty">
+                              {stockValue(product.id, store.id) || '—'}
+                            </strong>
+                            <button
+                              type="button"
+                              className="modal-stock-fix"
+                              disabled={busy}
+                              onClick={() => openFixCount(product, store)}
+                            >
+                              Fix count
+                            </button>
+                            <button
+                              type="button"
+                              className="modal-stock-add"
+                              disabled={busy}
+                              onClick={() => openReceive(product.id, store.id)}
+                            >
+                              Add stock
+                            </button>
+                          </div>
+                          <span className="muted modal-stock-hint">
+                            Add stock for supplier deliveries. Fix count when the shelf number is wrong.
+                          </span>
+                        </div>
+                        <label className="modal-field">
+                          <span>Damaged · {store.name}</span>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={damageValue(product.id, store.id)}
+                            onChange={(e) =>
+                              setDraftDamage((prev) => ({
+                                ...prev,
+                                [damageKey(product.id, store.id)]: e.target.value
+                              }))
+                            }
+                          />
+                        </label>
+                      </>
+                    ) : (
                       <label className="modal-field">
-                        <span>Damaged · {store.name}</span>
+                        <span>Opening count · {store.name}{rice ? ' (kg)' : ''}</span>
                         <input
                           type="text"
                           inputMode="decimal"
-                          placeholder="0"
-                          value={damageValue(product.id, store.id)}
+                          placeholder="—"
+                          value={newStockByStore[store.id] ?? ''}
                           onChange={(e) =>
-                            setDraftDamage((prev) => ({
+                            setNewStockByStore((prev) => ({
                               ...prev,
-                              [damageKey(product.id, store.id)]: e.target.value
+                              [store.id]: e.target.value
                             }))
                           }
                         />
+                        <span className="muted modal-stock-hint">
+                          Starting shelf count only — not a supplier delivery.
+                        </span>
                       </label>
                     )}
                   </div>
@@ -1797,6 +1858,47 @@ export function AdminScreen({
           </div>
         );
       })()}
+
+      {showReceiveModal && (
+        <ReceiveStockModal
+          storeId={receiveStoreId || inventoryStores[0]?.id || ''}
+          userId={userId}
+          busy={busy}
+          initialProductId={receiveProductId}
+          onCancel={() => {
+            setShowReceiveModal(false);
+            setReceiveProductId('');
+          }}
+          onSaved={(msg) => {
+            setShowReceiveModal(false);
+            setReceiveProductId('');
+            setMessage(msg);
+          }}
+        />
+      )}
+
+      {countModal && (
+        <CorrectCountModal
+          productId={countModal.product.id}
+          productName={countModal.product.name ?? 'Product'}
+          storeId={countModal.store.id}
+          storeName={countModal.store.name ?? 'Store'}
+          unit={selectedUnit(countModal.product)}
+          inventoryLevelId={
+            levelsByKey.get(stockKey(countModal.product.id, countModal.store.id))?.id ?? null
+          }
+          currentQty={Number(
+            levelsByKey.get(stockKey(countModal.product.id, countModal.store.id))?.qty ?? NaN
+          )}
+          userId={userId}
+          busy={busy}
+          onCancel={() => setCountModal(null)}
+          onSaved={(msg) => {
+            setCountModal(null);
+            setMessage(msg);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -44,11 +44,11 @@ export function CashPaymentModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="cash-modal-title" className="modal-title">
-          Cash settlement
+          Cash payment
         </h2>
 
         <div className="cash-row">
-          <span>Entry total</span>
+          <span>Total to pay</span>
           <strong className="cash-amount">{formatMoney(totalCents)}</strong>
         </div>
 

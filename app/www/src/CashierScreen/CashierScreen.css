@@ -419,6 +419,35 @@
   text-transform: none;
 }
 
+.cashier-discount,
+.cashier-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cashier-discount input,
+.cashier-customer input,
+.cashier-customer select {
+  min-height: 2.5rem;
+  padding: 0 0.65rem;
+  border: var(--line-width) solid var(--line);
+  background-color: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.cashier-subtotal {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
 .cashier-pay-label {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
@@ -434,7 +463,8 @@
 .pay-gcash,
 .pay-paymongo,
 .pay-card,
-.pay-split {
+.pay-split,
+.pay-utang {
   flex: 1 1 6rem;
   min-height: var(--pay-height);
   font-weight: 600;
@@ -467,11 +497,16 @@
   box-shadow: inset 3px 0 0 #a8a29e;
 }
 
+.pay-utang {
+  box-shadow: inset 3px 0 0 #a16207;
+}
+
 .pay-cash:hover:not(:disabled),
 .pay-gcash:hover:not(:disabled),
 .pay-paymongo:hover:not(:disabled),
 .pay-card:hover:not(:disabled),
-.pay-split:hover:not(:disabled) {
+.pay-split:hover:not(:disabled),
+.pay-utang:hover:not(:disabled) {
   background: var(--surface-2);
 }
 

@@ -1,0 +1,64 @@
+.receive-modal {
+  max-width: 28rem;
+}
+
+.receive-plain-input {
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.receive-status-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+}
+
+.receive-status {
+  display: flex;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.receive-status-tab {
+  flex: 1;
+  min-height: 2.5rem;
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.receive-status-tab + .receive-status-tab {
+  border-left: 1px solid var(--line);
+}
+
+.receive-status-tab[aria-selected='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--fill);
+}
+
+.receive-status-tab:hover:not(:disabled):not([aria-selected='true']) {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.receive-status-tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

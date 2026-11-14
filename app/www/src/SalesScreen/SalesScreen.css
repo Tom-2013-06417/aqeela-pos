@@ -103,6 +103,11 @@
   font-family: var(--font-mono);
 }
 
+.sales-pending {
+  font-weight: 700;
+  color: var(--warn);
+}
+
 .sales-date {
   overflow: hidden;
   text-overflow: ellipsis;

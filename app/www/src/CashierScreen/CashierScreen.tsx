@@ -7,9 +7,12 @@ import type { SupabaseConnector } from '../connector';
 import { db } from '../powerSync';
 import { productColorHex, productColorTint } from '../productColors';
 import { StatusBanner } from '../StatusBanner/StatusBanner';
+import '../CashPaymentModal/CashPaymentModal.css';
+import '../PaymentConfirmModal/PaymentConfirmModal.css';
 import '../styles/fullscreen-modal.css';
 import {
   CATEGORIES_TABLE,
+  CUSTOMERS_TABLE,
   INVENTORY_LEVELS_TABLE,
   PRODUCTS_TABLE,
   SALE_LINES_TABLE,
@@ -22,6 +25,7 @@ import {
   parsePaymentMethods,
   paymentMethodLabel,
   type CategoryRecord,
+  type CustomerRecord,
   type PaymentMethod,
   type ProductRecord,
   type Tender
@@ -66,6 +70,10 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   const [pendingMethod, setPendingMethod] = useState<Exclude<PaymentMethod, 'cash'> | null>(null);
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+  const [discountInput, setDiscountInput] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [showUtangConfirm, setShowUtangConfirm] = useState(false);
 
   useEffect(() => {
     if (!orderSheetOpen) return;
@@ -97,6 +105,28 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     () => parsePaymentMethods(storeRows[0]?.payment_methods),
     [storeRows]
   );
+
+  const { data: customers = [] } = useQuery<CustomerRecord>(
+    storeId
+      ? `SELECT * FROM ${CUSTOMERS_TABLE} WHERE store_id = ? ORDER BY name ASC`
+      : `SELECT * FROM ${CUSTOMERS_TABLE} WHERE 1 = 0`,
+    storeId ? [storeId] : []
+  );
+
+  const { data: openUtangRows = [] } = useQuery<{ customer_id: string }>(
+    storeId
+      ? `SELECT customer_id FROM ${SALES_TABLE}
+         WHERE store_id = ? AND payment_status = 'pending' AND customer_id IS NOT NULL`
+      : `SELECT customer_id FROM ${SALES_TABLE} WHERE 1 = 0`,
+    storeId ? [storeId] : []
+  );
+  const customersWithOpenUtang = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of openUtangRows) {
+      if (row.customer_id) set.add(row.customer_id);
+    }
+    return set;
+  }, [openUtangRows]);
 
   const { data: productsRaw = [], isLoading: productsLoading } = useQuery<
     CatalogProduct & { sellable?: number | boolean | null }
@@ -154,10 +184,18 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   }, [cartQty, productById]);
 
   const itemCount = cartLines.reduce((sum, line) => sum + line.qty, 0);
-  const totalCents = cartLines.reduce(
+  const subtotalCents = cartLines.reduce(
     (sum, line) => sum + Math.round(line.qty * (line.product.price_cents ?? 0)),
     0
   );
+  const discountCents = (() => {
+    const trimmed = discountInput.trim();
+    if (trimmed === '') return 0;
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.min(Math.round(n * 100), subtotalCents);
+  })();
+  const totalCents = Math.max(0, subtotalCents - discountCents);
 
   const enabledMethods = PAYMENT_METHOD_BUTTONS.filter((method) => paymentToggles[method]);
 
@@ -218,21 +256,41 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     setQty(product, n);
   }
 
-  async function placeOrder(tenders: Tender[]) {
+  async function ensureCustomerId(): Promise<string | null> {
+    if (customerId) return customerId;
+    const name = newCustomerName.trim();
+    if (!name) return null;
+    if (!storeId) throw new Error('No store assignment found for this user.');
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    await db.execute(
+      `INSERT INTO ${CUSTOMERS_TABLE} (id, store_id, name, phone, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, storeId, name, null, now, now]
+    );
+    setCustomerId(id);
+    setNewCustomerName('');
+    return id;
+  }
+
+  async function placeOrder(tenders: Tender[], options?: { asUtang?: boolean }) {
+    const asUtang = options?.asUtang === true;
     if (cartLines.length === 0) {
       setMessage('Add items to the order first');
       return;
     }
 
-    if (tenders.length === 0) {
-      setMessage('Choose a settlement method first');
+    if (!asUtang && tenders.length === 0) {
+      setMessage('Choose how they paid first');
       return;
     }
 
-    const disabledTender = tenders.find((tender) => !paymentToggles[tender.method]);
-    if (disabledTender) {
-      setMessage(`${paymentMethodLabel(disabledTender.method)} is not enabled for this location`);
-      return;
+    if (!asUtang) {
+      const disabledTender = tenders.find((tender) => !paymentToggles[tender.method]);
+      if (disabledTender) {
+        setMessage(`${paymentMethodLabel(disabledTender.method)} is not enabled for this location`);
+        return;
+      }
     }
 
     const session = connector.currentSession;
@@ -258,26 +316,61 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         throw new Error('No store assignment found for this user. Run store_staff insert in Supabase.');
       }
 
+      let resolvedCustomerId: string | null = null;
+      if (asUtang) {
+        resolvedCustomerId = await ensureCustomerId();
+        if (!resolvedCustomerId) {
+          throw new Error('Pick or type the customer name first');
+        }
+        if (customersWithOpenUtang.has(resolvedCustomerId)) {
+          throw new Error('This customer still has unpaid utang. Collect that first.');
+        }
+      } else if (customerId || newCustomerName.trim()) {
+        resolvedCustomerId = await ensureCustomerId();
+      }
+
       const saleId = crypto.randomUUID();
       const now = new Date().toISOString();
-      const total = cartLines.reduce(
+      const subtotal = cartLines.reduce(
         (sum, line) => sum + Math.round(line.qty * (line.product.price_cents ?? 0)),
         0
       );
+      const discount = Math.min(discountCents, subtotal);
+      const total = Math.max(0, subtotal - discount);
 
-      const paidCents = tenders.reduce((sum, tender) => sum + tender.amountCents, 0);
-      if (paidCents !== total) {
-        throw new Error(`Payments (${formatMoney(paidCents)}) do not match the total (${formatMoney(total)})`);
+      if (!asUtang) {
+        const paidCents = tenders.reduce((sum, tender) => sum + tender.amountCents, 0);
+        if (paidCents !== total) {
+          throw new Error(
+            `Payments (${formatMoney(paidCents)}) do not match the total (${formatMoney(total)})`
+          );
+        }
       }
 
       const methods = new Set(tenders.map((tender) => tender.method));
-      const saleMethod = methods.size === 1 ? tenders[0].method : 'split';
+      const saleMethod = asUtang
+        ? 'utang'
+        : methods.size === 1
+          ? tenders[0].method
+          : 'split';
+      const paymentStatus = asUtang ? 'pending' : 'paid';
 
       await db.writeTransaction(async (tx) => {
         await tx.execute(
-          `INSERT INTO ${SALES_TABLE} (id, store_id, cashier_id, total_cents, payment_method, created_at)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [saleId, storeId, session.user.id, total, saleMethod, now]
+          `INSERT INTO ${SALES_TABLE}
+             (id, store_id, cashier_id, total_cents, payment_method, payment_status, customer_id, discount_cents, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            saleId,
+            storeId,
+            session.user.id,
+            total,
+            saleMethod,
+            paymentStatus,
+            resolvedCustomerId,
+            discount,
+            now
+          ]
         );
 
         for (const line of cartLines) {
@@ -291,39 +384,69 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [crypto.randomUUID(), saleId, line.product.id, line.qty.toFixed(3), unitPrice, lineTotal]
           );
-          await tx.execute(
-            `UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`,
-            [newStock, line.product.inventory_level_id]
-          );
+          await tx.execute(`UPDATE ${INVENTORY_LEVELS_TABLE} SET qty = ? WHERE id = ?`, [
+            newStock,
+            line.product.inventory_level_id
+          ]);
         }
 
-        // Zero-amount tenders (e.g. a free order) have no server row: amount_cents must be > 0.
-        for (const tender of tenders) {
-          if (tender.amountCents <= 0) continue;
-          await tx.execute(
-            `INSERT INTO ${SALE_PAYMENTS_TABLE} (id, sale_id, method, amount_cents, tendered_cents, created_at)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-              crypto.randomUUID(),
-              saleId,
-              tender.method,
-              tender.amountCents,
-              tender.tenderedCents ?? null,
-              now
-            ]
-          );
+        if (!asUtang) {
+          for (const tender of tenders) {
+            if (tender.amountCents <= 0) continue;
+            await tx.execute(
+              `INSERT INTO ${SALE_PAYMENTS_TABLE} (id, sale_id, method, amount_cents, tendered_cents, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                crypto.randomUUID(),
+                saleId,
+                tender.method,
+                tender.amountCents,
+                tender.tenderedCents ?? null,
+                now
+              ]
+            );
+          }
         }
       });
 
-      setMessage(`Entry logged (${paymentMethodLabel(saleMethod)}) — ${formatMoney(total)}`);
+      setMessage(
+        asUtang
+          ? `Saved as utang — ${formatMoney(total)}`
+          : `Saved (${paymentMethodLabel(saleMethod)}) — ${formatMoney(total)}`
+      );
       setCartQty({});
       setDraftQtyInput({});
+      setDiscountInput('');
+      setCustomerId('');
+      setNewCustomerName('');
       setOrderSheetOpen(false);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Could not log entry');
     } finally {
       setBusy(false);
     }
+  }
+
+  async function confirmUtang() {
+    setShowUtangConfirm(false);
+    await placeOrder([], { asUtang: true });
+  }
+
+  function openUtang() {
+    if (cartLines.length === 0) {
+      setMessage('Add items to the order first');
+      return;
+    }
+    if (!customerId && !newCustomerName.trim()) {
+      setMessage('Pick or type the customer name first');
+      return;
+    }
+    if (customerId && customersWithOpenUtang.has(customerId)) {
+      setMessage('This customer still has unpaid utang. Collect that first.');
+      return;
+    }
+    setMessage(null);
+    setShowUtangConfirm(true);
   }
 
   function openCashModal() {
@@ -637,14 +760,66 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         </div>
 
         <footer className="cashier-order-footer">
+          <label className="cashier-discount">
+            <span>Discount (₱ off)</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={discountInput}
+              disabled={busy || cartLines.length === 0}
+              onChange={(e) => setDiscountInput(e.target.value)}
+            />
+          </label>
+          {discountCents > 0 && (
+            <div className="cashier-subtotal muted">
+              <span>Before discount {formatMoney(subtotalCents)}</span>
+              <span>−{formatMoney(discountCents)}</span>
+            </div>
+          )}
           <div className="cashier-total">
-            <span>Entry total</span>
+            <span>Total to pay</span>
             <strong>{formatMoney(totalCents)}</strong>
           </div>
-          <p className="cashier-pay-label muted">Log how it was settled</p>
+
+          <label className="cashier-customer">
+            <span>Customer (needed for utang)</span>
+            <select
+              value={customerId}
+              disabled={busy}
+              onChange={(e) => {
+                setCustomerId(e.target.value);
+                if (e.target.value) setNewCustomerName('');
+              }}
+            >
+              <option value="">Pick a customer…</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {customersWithOpenUtang.has(c.id) ? ' (still owes)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          {!customerId && (
+            <label className="cashier-customer">
+              <span>Or type a new name</span>
+              <input
+                type="text"
+                value={newCustomerName}
+                disabled={busy}
+                placeholder="Customer name"
+                onChange={(e) => setNewCustomerName(e.target.value)}
+              />
+            </label>
+          )}
+
+          <p className="cashier-pay-label muted">How did they pay?</p>
           <div className="cashier-pay-actions">
             {enabledMethods.length === 0 && (
-              <p className="muted">No settlement methods enabled for this location.</p>
+              <p className="muted">No payment options turned on for this store.</p>
             )}
             {enabledMethods.includes('cash') && (
               <button
@@ -696,6 +871,14 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 Split
               </button>
             )}
+            <button
+              type="button"
+              className="pay-utang"
+              disabled={busy || cartLines.length === 0}
+              onClick={openUtang}
+            >
+              Utang
+            </button>
           </div>
         </footer>
       </aside>
@@ -751,6 +934,50 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           onCancel={() => setPendingMethod(null)}
           onConfirm={() => void confirmPendingPayment()}
         />
+      )}
+
+      {showUtangConfirm && (
+        <div className="modal-overlay" role="presentation" onClick={() => setShowUtangConfirm(false)}>
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="utang-confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="utang-confirm-title" className="modal-title">
+              Save as utang?
+            </h2>
+            <div className="cash-row">
+              <span>Total to pay</span>
+              <strong className="cash-amount">{formatMoney(totalCents)}</strong>
+            </div>
+            <p className="payment-confirm-message">
+              {customerId
+                ? customers.find((c) => c.id === customerId)?.name ?? 'This customer'
+                : newCustomerName.trim() || 'This customer'}{' '}
+              will pay later. Each person can only have one unpaid utang at a time.
+            </p>
+            <div className="cash-actions">
+              <button
+                type="button"
+                className="cash-cancel"
+                onClick={() => setShowUtangConfirm(false)}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="cash-confirm"
+                disabled={busy}
+                autoFocus
+                onClick={() => void confirmUtang()}
+              >
+                Save utang
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

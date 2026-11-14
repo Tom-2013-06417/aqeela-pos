@@ -1,0 +1,25 @@
+.correct-count-modal {
+  max-width: 28rem;
+}
+
+.correct-count-hint {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.correct-count-product {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.correct-count-modal .receive-plain-input {
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 500;
+}

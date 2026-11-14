@@ -1,0 +1,122 @@
+.ledger-filter {
+  display: block;
+  margin-bottom: 1rem;
+  max-width: 18rem;
+}
+
+.ledger-filter select {
+  width: 100%;
+  min-height: var(--touch);
+  border: var(--line-width) solid var(--line);
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+.ledger-section {
+  margin-bottom: 1.75rem;
+}
+
+.ledger-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.ledger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ledger-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.ledger-list .ledger-item:last-child {
+  border-bottom: none;
+}
+
+.ledger-item-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ledger-when {
+  font-size: 0.85rem;
+}
+
+.ledger-action {
+  flex: 0 0 auto;
+  align-self: center;
+  min-height: var(--touch);
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--fill);
+  color: var(--on-fill);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ledger-action-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--fill);
+}
+
+.ledger-action:hover:not(:disabled) {
+  background: var(--fill-hover);
+}
+
+.ledger-action-secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.ledger-settle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ledger-settle select {
+  min-height: var(--touch);
+  border: 1px solid var(--line);
+  background-color: var(--surface);
+}
+
+.ledger-footnote {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+  .ledger-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ledger-action {
+    width: 100%;
+  }
+
+  .ledger-settle {
+    width: 100%;
+  }
+
+  .ledger-settle select,
+  .ledger-settle .ledger-action {
+    flex: 1 1 auto;
+  }
+}

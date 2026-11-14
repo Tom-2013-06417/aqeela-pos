@@ -6,7 +6,8 @@ import {
   SALE_LINES_TABLE,
   SALE_PAYMENTS_TABLE,
   STORES_TABLE,
-  paymentMethodLabel
+  paymentMethodLabel,
+  paymentStatusLabel
 } from '../schema';
 import { db } from '../powerSync';
 import { StatusBanner } from '../StatusBanner/StatusBanner';
@@ -72,16 +73,20 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
     store_name: string | null;
     total_cents: number;
     payment_method: string;
+    payment_status: string | null;
+    discount_cents: number | null;
     created_at: string;
   }>(
     storeFilter
-      ? `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method, s.created_at
+      ? `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method,
+                s.payment_status, s.discount_cents, s.created_at
          FROM ${SALES_TABLE} s
          LEFT JOIN ${STORES_TABLE} st ON st.id = s.store_id
          WHERE s.store_id = ?
          ORDER BY s.created_at DESC
          LIMIT ${PAGE_SIZE} OFFSET ${offset}`
-      : `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method, s.created_at
+      : `SELECT s.id, s.store_id, st.name as store_name, s.total_cents, s.payment_method,
+                s.payment_status, s.discount_cents, s.created_at
          FROM ${SALES_TABLE} s
          LEFT JOIN ${STORES_TABLE} st ON st.id = s.store_id
          ORDER BY s.created_at DESC
@@ -270,6 +275,12 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                     </span>
                     <span className="sales-expand-meta">
                       <span className="muted">{paymentMethodLabel(sale.payment_method)}</span>
+                      {sale.payment_status === 'pending' && (
+                        <span className="sales-pending">{paymentStatusLabel('pending')}</span>
+                      )}
+                      {sale.discount_cents != null && sale.discount_cents > 0 && (
+                        <span className="muted">−{formatMoney(sale.discount_cents)}</span>
+                      )}
                       {showStoreLabel && !storeFilter && (
                         <span className="muted">{sale.store_name ?? 'Unknown branch'}</span>
                       )}

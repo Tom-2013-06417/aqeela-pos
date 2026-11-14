@@ -4,6 +4,7 @@ import './SideNav.css';
 export type AppView =
   | 'cashier'
   | 'sales'
+  | 'ledger'
   | 'inventory'
   | 'categories'
   | 'adjustments'
@@ -24,6 +25,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { id: 'cashier', label: 'Entry', cashierOnly: true },
   { id: 'sales', label: 'Log' },
+  { id: 'ledger', label: 'Balances' },
   { id: 'inventory', label: 'Stock', inventoryAccess: true },
   { id: 'categories', label: 'Categories', inventoryAccess: true },
   { id: 'adjustments', label: 'Adjustments', inventoryAccess: true },
@@ -86,6 +88,15 @@ function IconAdjustments() {
   );
 }
 
+function IconLedger() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M6 4h12v16H6z" />
+      <path d="M9 8h6M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
 function IconStores() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -128,6 +139,7 @@ function IconSignOut() {
 const ICONS: Record<AppView, () => React.ReactNode> = {
   cashier: IconCashier,
   sales: IconSales,
+  ledger: IconLedger,
   inventory: IconInventory,
   categories: IconCategories,
   adjustments: IconAdjustments,
@@ -138,6 +150,7 @@ const ICONS: Record<AppView, () => React.ReactNode> = {
 export const VIEW_LABELS: Record<AppView, string> = {
   cashier: 'Entry',
   sales: 'Log',
+  ledger: 'Balances',
   inventory: 'Stock',
   categories: 'Categories',
   adjustments: 'Adjustments',
@@ -149,6 +162,7 @@ export const VIEW_LABELS: Record<AppView, string> = {
 export const VIEW_PATHS: Record<AppView, string> = {
   cashier: '/entry',
   sales: '/log',
+  ledger: '/balances',
   inventory: '/stock',
   categories: '/categories',
   adjustments: '/adjustments',
@@ -166,7 +180,9 @@ export function normalizePath(pathname: string) {
 }
 
 export function viewFromPath(pathname: string): AppView | null {
-  return PATH_TO_VIEW[normalizePath(pathname)] ?? null;
+  const path = normalizePath(pathname);
+  if (path === '/ledger') return 'ledger';
+  return PATH_TO_VIEW[path] ?? null;
 }
 
 export function pathForView(view: AppView) {

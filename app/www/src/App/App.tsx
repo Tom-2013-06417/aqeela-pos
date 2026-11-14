@@ -7,6 +7,7 @@ import { SupabaseConnector } from '../connector';
 import { PwaBanner } from '../PwaBanner/PwaBanner';
 import { db } from '../powerSync';
 import { AdjustmentsScreen } from '../AdjustmentsScreen/AdjustmentsScreen';
+import { LedgerScreen } from '../LedgerScreen/LedgerScreen';
 import { SalesScreen } from '../SalesScreen/SalesScreen';
 import {
   SideNav,
@@ -311,6 +312,7 @@ function AuthedApp({
         <main className="pos-main">
           {view === 'cashier' && canUseCashier && <CashierScreen connector={connector} />}
           {view === 'sales' && <SalesScreen isAdmin={isAdmin} />}
+          {view === 'ledger' && <LedgerScreen />}
           {view === 'inventory' && canManageInventory && (
             <AdminScreen connector={connector} section="inventory" />
           )}

@@ -25,6 +25,43 @@
   margin-bottom: 1rem;
 }
 
+.inventory-receive-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.inventory-receive-store {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.inventory-receive-store select {
+  width: 100%;
+  min-height: var(--touch);
+  border: 1px solid var(--line);
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+.inventory-receive-btn {
+  min-height: var(--touch);
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--fill);
+  color: var(--on-fill);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-receive-btn:hover:not(:disabled) {
+  background: var(--fill-hover);
+}
+
 .inventory-section h2 {
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
@@ -99,12 +136,65 @@
   background-image: none;
 }
 
-.inventory-price,
-.inventory-stock {
+.inventory-price {
   flex: 0 0 7.5rem;
   width: 7.5rem;
   min-width: 0;
   font-family: var(--font-mono);
+}
+
+.inventory-stock {
+  flex: 0 0 8.5rem;
+  width: 8.5rem;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.inventory-stock-cell {
+  gap: 0.35rem;
+  justify-content: space-between;
+  padding-inline: 0.45rem;
+}
+
+.inventory-stock-qty {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-stock-fix {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.inventory-stock-fix:hover:not(:disabled) {
+  background: var(--fill);
+  border-color: var(--fill);
+  color: var(--on-fill);
+}
+
+.inventory-stock-fix:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.inventory-head .inventory-stock-cell {
+  justify-content: flex-start;
 }
 
 .inventory-damage {
@@ -251,6 +341,53 @@
 
 .modal-field-checkbox > span:first-child {
   flex: 0 0 100%;
+}
+
+.modal-stock-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.modal-stock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-stock-qty {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  min-width: 3rem;
+}
+
+.modal-stock-fix,
+.modal-stock-add {
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal-stock-add {
+  background: var(--fill);
+  border-color: var(--fill);
+  color: var(--on-fill);
+}
+
+.modal-stock-fix:hover:not(:disabled),
+.modal-stock-add:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.modal-stock-hint {
+  font-size: 0.85rem;
 }
 
 .modal-stock-group {

@@ -19,6 +19,16 @@ streams:
       - SELECT stock_adjustments.* FROM stock_adjustments
         INNER JOIN store_staff ON store_staff.store_id = stock_adjustments.store_id
         WHERE store_staff.user_id = auth.user_id()
+      - SELECT customers.* FROM customers
+        INNER JOIN store_staff ON store_staff.store_id = customers.store_id
+        WHERE store_staff.user_id = auth.user_id()
+      - SELECT stock_receipts.* FROM stock_receipts
+        INNER JOIN store_staff ON store_staff.store_id = stock_receipts.store_id
+        WHERE store_staff.user_id = auth.user_id()
+      - SELECT stock_receipt_lines.* FROM stock_receipt_lines
+        INNER JOIN stock_receipts ON stock_receipts.id = stock_receipt_lines.receipt_id
+        INNER JOIN store_staff ON store_staff.store_id = stock_receipts.store_id
+        WHERE store_staff.user_id = auth.user_id()
       - SELECT categories.* FROM categories
         INNER JOIN store_staff ON store_staff.user_id = auth.user_id()
       - SELECT sales.* FROM sales
