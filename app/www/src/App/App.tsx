@@ -59,11 +59,10 @@ function LoginScreen({ connector }: { connector: SupabaseConnector }) {
   return (
     <div className="card login-card">
       <h1>aqeela</h1>
-      <p className="muted">Store ledger — sign in to continue</p>
+      <p className="muted">Sign in to use this store</p>
       {!navigator.onLine && (
         <p className="error">
-          Offline — sign-in needs network. If you signed in earlier on this device, refresh after reconnecting once, then
-          the app will work offline.
+          No internet — you need to connect once to sign in. After that, this device can work offline.
         </p>
       )}
       <form onSubmit={handleSubmit}>
@@ -128,30 +127,28 @@ function DiagnosticsPanel({
 
   return (
     <section className="card diagnostics diagnostics-overlay">
-      <h2>Diagnostics</h2>
-      {downloadError && <p className="error">Sync error: {downloadError}</p>}
+      <h2>Troubleshoot</h2>
+      {downloadError && <p className="error">Update error: {downloadError}</p>}
       {staffSyncGap && (
         <p className="error">
-          PowerSync reports synced but local store_staff is empty while remote has{' '}
-          {remote.staffCount} row(s). Clear site data for this origin (or reinstall the
-          PWA), then sign in again. Nav roles will also fall back to Supabase while
-          online.
+          Your account is linked online, but this device has no store access yet. Clear
+          this site’s saved data (or reinstall the app), then sign in again while online.
         </p>
       )}
       <ul className="diag-list">
         <li>
-          Logged-in user: <code>{userId || 'unknown'}</code>
+          Signed-in user: <code>{userId || 'unknown'}</code>
         </li>
         <li>
-          PowerSync: {status.connected ? 'connected' : 'not connected'} ·{' '}
-          {status.hasSynced ? 'synced' : 'not synced yet'}
+          Connection: {status.connected ? 'online' : 'offline'} ·{' '}
+          {status.hasSynced ? 'up to date' : 'still updating'}
         </li>
         <li>
-          Remote store_staff: {remote?.staffCount ?? '…'}
+          Store access (server): {remote?.staffCount ?? '…'}
           {remote?.staffError ? ` — ${remote.staffError}` : ''}
         </li>
-        <li>Local products: {products.length}</li>
-        <li>Local store_staff: {staffRows.length}</li>
+        <li>Products on this device: {products.length}</li>
+        <li>Store access on this device: {staffRows.length}</li>
       </ul>
     </section>
   );
@@ -263,11 +260,11 @@ function AuthedApp({
   const syncOk = status.connected && Boolean(status.hasSynced);
   const syncLabel = status.connected
     ? status.hasSynced
-      ? 'Synced'
-      : 'Syncing…'
+      ? 'Up to date'
+      : 'Updating…'
     : navigator.onLine
       ? 'Connecting…'
-      : 'Offline';
+      : 'No internet';
 
   return (
     <div className="pos-shell">
@@ -334,16 +331,16 @@ function AuthedApp({
 function startupErrorMessage(err: unknown) {
   if (!window.isSecureContext) {
     return (
-      'PowerSync needs a secure browser context (HTTPS). ' +
-      'On this device, open https://<your-computer-ip>:5173 instead of http://…, ' +
-      'then accept the browser security warning for the local dev certificate.'
+      'This app needs a secure link (https). ' +
+      'Open https://<your-computer-ip>:5173 instead of http://…, ' +
+      'then accept the browser warning for the local certificate.'
     );
   }
 
-  const message = err instanceof Error ? err.message : 'Startup failed';
+  const message = err instanceof Error ? err.message : 'Could not start the app';
   if (/secure context|navigator locks/i.test(message)) {
     return (
-      'PowerSync could not start because this page is not served over HTTPS. ' +
+      'Could not start because this page is not on https. ' +
       'Use https://<your-computer-ip>:5173 from other devices on your network.'
     );
   }

@@ -108,7 +108,7 @@ export class SupabaseConnector
 
   async login(email: string, password: string) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new Error('Sign-in needs network. Open the app online once, then you can use it offline.');
+      throw new Error('Need internet to sign in. Connect once, then you can use this device offline.');
     }
     const { data, error } = await this.client.auth.signInWithPassword({ email, password });
     if (error) throw error;

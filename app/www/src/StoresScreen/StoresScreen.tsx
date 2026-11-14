@@ -76,7 +76,7 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
     const name = nameValue(store).trim();
     const enabled = enabledValue(store);
     if (!name) {
-      setMessage('Store name is required');
+      setMessage('Type a store name');
       return;
     }
 
@@ -88,11 +88,11 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
         enabled ? 1 : 0,
         store.id
       ]);
-      setMessage(`Updated ${name}`);
+      setMessage(`Saved ${name}`);
       clearDrafts(store.id);
       setStoreModal(null);
     } catch (err) {
-      setMessage(errorMessage(err, 'Update store failed'));
+      setMessage(errorMessage(err, 'Could not save store'));
     } finally {
       setBusy(false);
     }
@@ -101,16 +101,16 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
   async function addStore(e?: React.FormEvent) {
     e?.preventDefault();
     if (!userId) {
-      setMessage('Not signed in');
+      setMessage('Please sign in first');
       return;
     }
     const name = newName.trim();
     if (!name) {
-      setMessage('Store name is required');
+      setMessage('Type a store name');
       return;
     }
     if (!navigator.onLine) {
-      setMessage('Creating a store needs network so PowerSync can link you as admin and sync it.');
+      setMessage('Need internet to create a store (so you’re set as its admin).');
       return;
     }
 
@@ -127,12 +127,12 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
       if (error) throw error;
       if (!storeId) throw new Error('Create store returned no id');
 
-      setMessage(`Added ${name}. Syncing…`);
+      setMessage(`Added ${name}. Updating this device…`);
       setNewName('');
       setNewEnabled(true);
       setStoreModal(null);
     } catch (err) {
-      setMessage(errorMessage(err, 'Add store failed'));
+      setMessage(errorMessage(err, 'Could not add store'));
     } finally {
       setBusy(false);
     }
@@ -149,10 +149,10 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
         enabled ? 1 : 0,
         store.id
       ]);
-      setMessage(enabled ? `Activated ${name}` : `Deactivated ${name}`);
+      setMessage(enabled ? `Turned on ${name}` : `Turned off ${name}`);
       clearDrafts(store.id);
     } catch (err) {
-      setMessage(errorMessage(err, 'Update store failed'));
+      setMessage(errorMessage(err, 'Could not update store'));
     } finally {
       setBusy(false);
     }
@@ -163,15 +163,19 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
       <header className="panel-view-header">
         <h1>Stores</h1>
         <p className="muted">
-          Create and update locations. Deactivate instead of deleting so sales history stays intact.
-          Creating a store needs network (you become admin and PowerSync syncs it).
+          Add or rename store locations. Turn a store off instead of deleting so old sales stay in
+          history. Creating a store needs internet (you become its admin).
         </p>
       </header>
 
       <div className="panel-view-body">
         <StatusBanner
           message={message}
-          variant={message?.toLowerCase().includes('fail') ? 'error' : 'success'}
+          variant={
+            message?.toLowerCase().includes('fail') || message?.toLowerCase().includes('could not')
+              ? 'error'
+              : 'success'
+          }
           onDismiss={() => setMessage(null)}
         />
 
@@ -239,7 +243,7 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
                   disabled={busy}
                   onClick={() => void setStoreActive(store, !isStoreEnabled(store))}
                 >
-                  {isStoreEnabled(store) ? 'Deactivate' : 'Activate'}
+                  {isStoreEnabled(store) ? 'Turn off' : 'Turn on'}
                 </button>
               </div>
             );
@@ -375,7 +379,9 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
                         }
                       }}
                     />
-                    <span className="muted">Inactive stores stay in history but hide from inventory</span>
+                    <span className="muted">
+                      Off stores stay in sales history but hide from Stock
+                    </span>
                   </label>
                 </div>
                 <footer className="modal-footer">
@@ -386,7 +392,7 @@ export function StoresScreen({ connector }: { connector: SupabaseConnector }) {
                       disabled={busy}
                       onClick={() => void setStoreActive(store, !isStoreEnabled(store))}
                     >
-                      {isStoreEnabled(store) ? 'Deactivate' : 'Activate'}
+                      {isStoreEnabled(store) ? 'Turn off' : 'Turn on'}
                     </button>
                   )}
                   <button

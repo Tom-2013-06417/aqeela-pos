@@ -276,7 +276,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
   async function placeOrder(tenders: Tender[], options?: { asUtang?: boolean }) {
     const asUtang = options?.asUtang === true;
     if (cartLines.length === 0) {
-      setMessage('Add items to the order first');
+      setMessage('Add products first');
       return;
     }
 
@@ -288,14 +288,14 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
     if (!asUtang) {
       const disabledTender = tenders.find((tender) => !paymentToggles[tender.method]);
       if (disabledTender) {
-        setMessage(`${paymentMethodLabel(disabledTender.method)} is not enabled for this location`);
+        setMessage(`${paymentMethodLabel(disabledTender.method)} is turned off for this store`);
         return;
       }
     }
 
     const session = connector.currentSession;
     if (!session?.user?.id) {
-      setMessage('Not signed in');
+      setMessage('Please sign in first');
       return;
     }
 
@@ -303,7 +303,9 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
       const stock = Number(line.product.stock_qty);
       if (line.qty > stock) {
         const unit = productIsRice(line.product) ? 'kg' : line.product.unit;
-        setMessage(`Not enough stock for ${line.product.name} (have ${stock} ${unit})`);
+        setMessage(
+          `Not enough ${line.product.name} in stock (only ${stock} ${unit} left)`
+        );
         return;
       }
     }
@@ -313,7 +315,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
     try {
       if (!storeId) {
-        throw new Error('No store assignment found for this user. Run store_staff insert in Supabase.');
+        throw new Error('Your account is not linked to a store yet. Ask an admin for help.');
       }
 
       let resolvedCustomerId: string | null = null;
@@ -421,7 +423,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
       setNewCustomerName('');
       setOrderSheetOpen(false);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Could not log entry');
+      setMessage(err instanceof Error ? err.message : 'Could not save this sale');
     } finally {
       setBusy(false);
     }
@@ -434,7 +436,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
   function openUtang() {
     if (cartLines.length === 0) {
-      setMessage('Add items to the order first');
+      setMessage('Add products first');
       return;
     }
     if (!customerId && !newCustomerName.trim()) {
@@ -451,7 +453,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
   function openCashModal() {
     if (cartLines.length === 0) {
-      setMessage('Add items to the order first');
+      setMessage('Add products first');
       return;
     }
     setMessage(null);
@@ -460,7 +462,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
   function openPaymentConfirm(method: Exclude<PaymentMethod, 'cash'>) {
     if (cartLines.length === 0) {
-      setMessage('Add items to the order first');
+      setMessage('Add products first');
       return;
     }
     setMessage(null);
@@ -469,7 +471,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
   function openSplitModal() {
     if (cartLines.length === 0) {
-      setMessage('Add items to the order first');
+      setMessage('Add products first');
       return;
     }
     setMessage(null);
@@ -654,7 +656,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           </label>
           <StatusBanner
             message={message}
-            variant={message?.startsWith('Entry logged') ? 'success' : 'error'}
+            variant={message?.startsWith('Saved') ? 'success' : 'error'}
             onDismiss={() => setMessage(null)}
           />
         </div>
@@ -702,7 +704,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
             {productsLoading || !status.hasSynced ? (
               <p className="muted">Loading products…</p>
             ) : products.length === 0 ? (
-              <p className="muted">No products synced yet.</p>
+              <p className="muted">No products yet. Ask someone to add them on Stock.</p>
             ) : (
               <p className="muted">No products match your search.</p>
             )}
@@ -712,13 +714,15 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
       <aside
         className={`cashier-order ${orderSheetOpen ? 'sheet-open' : ''}`}
-        aria-label="Current entry"
+        aria-label="Current sale"
       >
         <header className="cashier-order-header">
-          <h2>This entry</h2>
+          <h2>This sale</h2>
           <span className="muted">
             {storeName ? `${storeName} · ` : ''}
-            {itemCount === 0 ? 'Empty' : `${formatKg(itemCount)} line${itemCount === 1 ? '' : 's'}`}
+            {itemCount === 0
+              ? 'No items yet'
+              : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
           </span>
           <button
             type="button"
@@ -731,7 +735,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
 
         <div className="cashier-order-list">
           {cartLines.length === 0 ? (
-            <p className="cashier-order-empty muted">Add lines from the catalog to start an entry.</p>
+            <p className="cashier-order-empty muted">Tap products on the left to add them here.</p>
           ) : (
             <ul>
               {cartLines.map(({ product, qty }) => {
@@ -785,7 +789,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
           </div>
 
           <label className="cashier-customer">
-            <span>Customer (needed for utang)</span>
+            <span>Customer (required for utang)</span>
             <select
               value={customerId}
               disabled={busy}
@@ -848,7 +852,7 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
                 disabled={busy || cartLines.length === 0}
                 onClick={() => openPaymentConfirm('paymongo_qr')}
               >
-                QR transfer
+                Bank QR
               </button>
             )}
             {enabledMethods.includes('card') && (
@@ -891,11 +895,11 @@ export function CashierScreen({ connector }: { connector: SupabaseConnector }) {
         >
           <span className="cashier-order-bar-count">
             {itemCount === 0
-              ? 'Empty entry'
-              : `${formatKg(itemCount)} line${itemCount === 1 ? '' : 's'}`}
+              ? 'No items yet'
+              : `${formatKg(itemCount)} item${itemCount === 1 ? '' : 's'}`}
           </span>
           <span className="cashier-order-bar-total">{formatMoney(totalCents)}</span>
-          <span className="cashier-order-bar-cta">Open</span>
+          <span className="cashier-order-bar-cta">View</span>
         </button>
       )}
 

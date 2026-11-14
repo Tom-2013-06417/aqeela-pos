@@ -112,7 +112,7 @@ export function serializePaymentMethods(toggles: PaymentMethodToggles): string {
 }
 
 export function paymentMethodLabel(method: string) {
-  if (method === 'paymongo_qr') return 'QR transfer';
+  if (method === 'paymongo_qr') return 'Bank QR';
   if (method === 'gcash') return 'GCash';
   if (method === 'cash') return 'Cash';
   if (method === 'card') return 'Card';
@@ -125,6 +125,14 @@ export function paymentStatusLabel(status: string) {
   if (status === 'pending') return 'Not paid yet';
   if (status === 'paid') return 'Paid';
   return status;
+}
+
+/** Friendly labels for staff roles (option values stay the same). */
+export function staffRoleLabel(role: string) {
+  if (role === 'cashier') return 'Cashier';
+  if (role === 'inventory_manager') return 'Stock only';
+  if (role === 'admin') return 'Admin';
+  return role;
 }
 
 /** PowerSync SQLite may store Postgres booleans as 0/1, true/false, or omit until synced. */

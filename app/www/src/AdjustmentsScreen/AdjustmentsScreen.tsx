@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@powersync/react';
 import type { SupabaseConnector } from '../connector';
+import { formatDateTime } from '../formatDate';
 import {
   PRODUCTS_TABLE,
   STOCK_ADJUSTMENT_REASONS,
@@ -33,23 +34,10 @@ function formatQty(qty: string) {
   return n.toFixed(3).replace(/\.?0+$/, '');
 }
 
-function formatWhen(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-}
-
 function reasonLabel(reason: string) {
   if (reason === 'damage') return 'Damage';
   if (reason === 'loss') return 'Loss';
-  if (reason === 'correction') return 'Correction';
+  if (reason === 'correction') return 'Count fix';
   return reason;
 }
 
@@ -133,9 +121,9 @@ export function AdjustmentsScreen({ connector }: { connector: SupabaseConnector 
   return (
     <div className="panel-view" ref={viewRef}>
       <header className="panel-view-header">
-        <h1>Adjustments</h1>
+        <h1>Stock changes</h1>
         <p className="muted">
-          Damage, loss, and stock corrections recorded from Inventory. Read-only history.
+          Damage, loss, and count fixes from the Stock page. You can look, not edit.
         </p>
       </header>
 
@@ -193,7 +181,8 @@ export function AdjustmentsScreen({ connector }: { connector: SupabaseConnector 
         {isLoading && rows.length === 0 && <p className="muted">Loading…</p>}
         {!isLoading && total === 0 && (
           <p className="muted">
-            No adjustments yet. Record damage from the Inventory Dmg column and save.
+            No stock changes yet. On Stock, type a Damage amount and tap Save — or use Fix
+            count when the shelf number is wrong.
           </p>
         )}
 
@@ -206,9 +195,9 @@ export function AdjustmentsScreen({ connector }: { connector: SupabaseConnector 
                     <th>When</th>
                     <th>Product</th>
                     <th>Store</th>
-                    <th>Reason</th>
-                    <th>Qty</th>
-                    <th>By</th>
+                    <th>Why</th>
+                    <th>Amount</th>
+                    <th>Who</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,7 +206,7 @@ export function AdjustmentsScreen({ connector }: { connector: SupabaseConnector 
                     const negative = Number.isFinite(qty) && qty < 0;
                     return (
                       <tr key={row.id}>
-                        <td className="adj-when">{formatWhen(row.created_at)}</td>
+                        <td className="adj-when">{formatDateTime(row.created_at)}</td>
                         <td>{row.product_name ?? 'Unknown product'}</td>
                         <td>{row.store_name ?? 'Unknown store'}</td>
                         <td>{reasonLabel(row.reason)}</td>
@@ -251,7 +240,7 @@ export function AdjustmentsScreen({ connector }: { connector: SupabaseConnector 
                       <span>{row.store_name ?? 'Unknown store'}</span>
                     </div>
                     <div className="adj-mobile-meta muted">
-                      <span>{formatWhen(row.created_at)}</span>
+                      <span>{formatDateTime(row.created_at)}</span>
                       <span title={row.created_by ?? undefined}>
                         {shortUserId(row.created_by, userId)}
                       </span>
@@ -265,7 +254,7 @@ export function AdjustmentsScreen({ connector }: { connector: SupabaseConnector 
         )}
 
         {total > 0 && (
-          <nav className="adj-pagination" aria-label="Adjustment pages">
+          <nav className="adj-pagination" aria-label="Stock change pages">
             {pages.map((pageNumber) => (
               <button
                 key={pageNumber}

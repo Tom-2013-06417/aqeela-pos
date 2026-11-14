@@ -23,12 +23,12 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'cashier', label: 'Entry', cashierOnly: true },
-  { id: 'sales', label: 'Log' },
+  { id: 'cashier', label: 'Sell', cashierOnly: true },
+  { id: 'sales', label: 'Sales' },
   { id: 'ledger', label: 'Balances' },
   { id: 'inventory', label: 'Stock', inventoryAccess: true },
   { id: 'categories', label: 'Categories', inventoryAccess: true },
-  { id: 'adjustments', label: 'Adjustments', inventoryAccess: true },
+  { id: 'adjustments', label: 'Stock changes', inventoryAccess: true },
   { id: 'stores', label: 'Stores', adminOnly: true },
   { id: 'users', label: 'Staff', adminOnly: true }
 ];
@@ -148,12 +148,12 @@ const ICONS: Record<AppView, () => React.ReactNode> = {
 };
 
 export const VIEW_LABELS: Record<AppView, string> = {
-  cashier: 'Entry',
-  sales: 'Log',
+  cashier: 'Sell',
+  sales: 'Sales',
   ledger: 'Balances',
   inventory: 'Stock',
   categories: 'Categories',
-  adjustments: 'Adjustments',
+  adjustments: 'Stock changes',
   stores: 'Stores',
   users: 'Staff'
 };
@@ -353,18 +353,24 @@ export function SideNav({
         <div className="side-nav-footer">
           <div
             className={`side-nav-status ${connected && hasSynced ? 'ok' : 'warn'}`}
-            title={connected ? (hasSynced ? 'Synced' : 'Syncing…') : 'Offline / connecting'}
+            title={
+              connected
+                ? hasSynced
+                  ? 'Up to date'
+                  : 'Updating…'
+                : 'No connection'
+            }
           >
             <span className="side-nav-dot" />
             {showLabels && (
               <span>
                 {connected
                   ? hasSynced
-                    ? 'Synced'
-                    : 'Syncing…'
+                    ? 'Up to date'
+                    : 'Updating…'
                   : navigator.onLine
                     ? 'Connecting…'
-                    : 'Offline'}
+                    : 'No internet'}
               </span>
             )}
           </div>
@@ -400,7 +406,7 @@ export function SideNav({
             onClick={(e) => e.stopPropagation()}
           >
             <p id={titleId} className="modal-message">
-              Are you sure you want to log out?
+              Sign out of this device?
             </p>
             <div className="modal-actions">
               <button
@@ -409,7 +415,7 @@ export function SideNav({
                 className="modal-cancel"
                 onClick={() => setConfirmOpen(false)}
               >
-                Cancel
+                Stay signed in
               </button>
               <button
                 type="button"
@@ -417,7 +423,7 @@ export function SideNav({
                 disabled={signingOut}
                 onClick={confirmSignOut}
               >
-                Log out
+                Sign out
               </button>
             </div>
           </div>

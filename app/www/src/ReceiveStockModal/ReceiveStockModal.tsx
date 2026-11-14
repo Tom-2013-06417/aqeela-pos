@@ -293,7 +293,7 @@ export function ReceiveStockModal({
 
         <div className="cash-actions">
           <button type="button" className="cash-cancel" disabled={disabled} onClick={onCancel}>
-            Cancel
+            Back
           </button>
           <button
             type="button"

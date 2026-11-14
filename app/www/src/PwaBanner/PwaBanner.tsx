@@ -21,13 +21,13 @@ export function PwaBanner() {
     <div className="pwa-banner" role="status">
       {needRefresh ? (
         <>
-          <span>A new version is available.</span>
+          <span>There’s an update. Tap Refresh when you’re free.</span>
           <button type="button" onClick={() => refreshPwa()}>
             Refresh
           </button>
         </>
       ) : (
-        <span>App is ready for offline use.</span>
+        <span>Ready to use without internet.</span>
       )}
     </div>
   );

@@ -186,10 +186,10 @@ export function SplitPaymentModal({
 
         <div className="cash-actions">
           <button type="button" className="cash-cancel" onClick={onCancel}>
-            Cancel
+            Back
           </button>
           <button type="button" className="cash-confirm" disabled={!canConfirm} onClick={confirm}>
-            Confirm
+            Save sale
           </button>
         </div>
       </div>

@@ -136,7 +136,7 @@ export function CorrectCountModal({
         </p>
 
         <div className="cash-row">
-          <span>Current saved</span>
+          <span>What the app has now</span>
           <strong className="cash-amount">
             {Number.isFinite(currentQty) ? currentQty : '—'} {unit}
           </strong>

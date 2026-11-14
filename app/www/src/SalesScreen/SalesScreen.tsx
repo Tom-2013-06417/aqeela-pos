@@ -9,6 +9,7 @@ import {
   paymentMethodLabel,
   paymentStatusLabel
 } from '../schema';
+import { formatDateTime } from '../formatDate';
 import { db } from '../powerSync';
 import { StatusBanner } from '../StatusBanner/StatusBanner';
 import '../styles/panel-view.css';
@@ -150,7 +151,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   }
 
   async function deleteSale(saleId: string) {
-    if (!window.confirm('Delete this entry and all its line items?')) return;
+    if (!window.confirm('Delete this sale and everything on it?')) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -164,16 +165,16 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
         delete next[saleId];
         return next;
       });
-      setMessage('Entry deleted.');
+      setMessage('Sale deleted.');
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to delete entry.');
+      setMessage(err instanceof Error ? err.message : 'Could not delete sale.');
     } finally {
       setBusy(false);
     }
   }
 
   async function clearAllSales() {
-    if (!window.confirm('Clear all entry history on this device? This cannot be undone.')) return;
+    if (!window.confirm('Clear all sales on this device? This cannot be undone.')) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -184,9 +185,9 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
       });
       setExpandedSaleIds({});
       setPage(1);
-      setMessage('All entry history cleared.');
+      setMessage('All sales cleared.');
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to clear entry history.');
+      setMessage(err instanceof Error ? err.message : 'Could not clear sales.');
     } finally {
       setBusy(false);
     }
@@ -195,11 +196,11 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="panel-view" ref={viewRef}>
       <header className="panel-view-header">
-        <h1>Log</h1>
+        <h1>Sales</h1>
         <p className="muted">
           {storeFilter
-            ? `Entries for ${stores.find((s) => s.id === storeFilter)?.name ?? 'this store'}`
-            : 'Recent entries on this device'}
+            ? `Sales for ${stores.find((s) => s.id === storeFilter)?.name ?? 'this store'}`
+            : 'Recent sales on this device'}
         </p>
       </header>
 
@@ -236,7 +237,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                   disabled={busy || (totalSales === 0 && sales.length === 0)}
                   onClick={() => void clearAllSales()}
                 >
-                  Clear all entries
+                  Clear all sales
                 </button>
               </div>
             )}
@@ -244,7 +245,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
         )}
         {isLoading && sales.length === 0 && <p className="muted">Loading…</p>}
         {!isLoading && sales.length === 0 && totalSales === 0 && (
-          <p className="muted">{storeFilter ? 'No entries for this store.' : 'No entries yet.'}</p>
+          <p className="muted">{storeFilter ? 'No sales for this store yet.' : 'No sales yet.'}</p>
         )}
         <ul className="sales-list">
           {sales.map((sale) => {
@@ -263,14 +264,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                     <span className="sales-expand-primary">
                       <span className="sales-amount">{formatMoney(sale.total_cents)}</span>
                       <span className="muted sales-date">
-                        {new Date(sale.created_at).toLocaleString('en-US', {
-                          month: 'numeric',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
+                        {formatDateTime(sale.created_at)}
                       </span>
                     </span>
                     <span className="sales-expand-meta">
@@ -301,7 +295,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                 {isExpanded && (
                   <div className="sales-lines">
                     {lines.length === 0 ? (
-                      <p className="muted">No line items found for this order.</p>
+                      <p className="muted">No items on this sale.</p>
                     ) : (
                       <ul>
                         {lines.map((line, index) => (
@@ -340,7 +334,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
                         disabled={busy}
                         onClick={() => void deleteSale(sale.id)}
                       >
-                        Delete entry
+                        Delete sale
                       </button>
                     )}
                   </div>
@@ -350,7 +344,7 @@ export function SalesScreen({ isAdmin }: { isAdmin: boolean }) {
           })}
         </ul>
         {totalSales > 0 && (
-          <nav className="sales-pagination" aria-label="Log pages">
+          <nav className="sales-pagination" aria-label="Sales pages">
             {pages.map((pageNumber) => (
               <button
                 key={pageNumber}

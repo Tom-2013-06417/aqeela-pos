@@ -27,6 +27,7 @@ import {
   parseStaffRole,
   paymentMethodLabel,
   serializePaymentMethods,
+  staffRoleLabel,
   type CategoryRecord,
   type InventoryLevelRecord,
   type PaymentMethod,
@@ -182,7 +183,7 @@ export function AdminScreen({
   const loadStaff = useCallback(async () => {
     if (!staffStoreId) return;
     if (!navigator.onLine) {
-      setStaffError('Staff list needs network. Reconnect to manage users.');
+      setStaffError('Need internet to see staff. Connect and try again.');
       return;
     }
 
@@ -198,7 +199,7 @@ export function AdminScreen({
       if (error) throw error;
       setStaff((data as StaffRow[]) ?? []);
     } catch (err) {
-      setStaffError(err instanceof Error ? err.message : 'Failed to load staff');
+      setStaffError(err instanceof Error ? err.message : 'Could not load staff');
     } finally {
       setStaffLoading(false);
     }
@@ -219,7 +220,10 @@ export function AdminScreen({
     if (Object.prototype.hasOwnProperty.call(draftKgPerSack, product.id)) {
       return draftKgPerSack[product.id];
     }
-    return product.kg_per_sack != null ? String(product.kg_per_sack) : '';
+    if (product.kg_per_sack == null || product.kg_per_sack === '') return '';
+    const n = Number(product.kg_per_sack);
+    if (!Number.isFinite(n)) return String(product.kg_per_sack);
+    return n.toFixed(2).replace(/\.?0+$/, '');
   }
 
   function stockValue(productId: string, storeId: string) {
@@ -319,11 +323,11 @@ export function AdminScreen({
 
     const pricePesos = Number(priceStr);
     if (!name) {
-      setMessage('Product name is required');
+      setMessage('Type a product name');
       return;
     }
     if (!Number.isFinite(pricePesos) || pricePesos < 0) {
-      setMessage('Enter a valid price');
+      setMessage('Enter a price (0 or more)');
       return;
     }
 
@@ -341,20 +345,20 @@ export function AdminScreen({
       if (damageRaw !== '') {
         damage = Number(damageRaw);
         if (!Number.isFinite(damage) || damage < 0) {
-          setMessage(`Enter a valid damaged qty for ${store.name}`);
+          setMessage(`Enter how many were damaged at ${store.name}`);
           return;
         }
       }
       if (damage === 0) continue;
       if (!level) {
         setMessage(
-          `No stock at ${store.name} yet — use Add stock or Fix count before recording damage`
+          `No stock at ${store.name} yet — use Add stock or Fix count first, then record damage`
         );
         return;
       }
       const currentQty = Number(level.qty ?? 0);
       if (!Number.isFinite(currentQty) || damage > currentQty) {
-        setMessage(`Damaged qty cannot exceed stock at ${store.name}`);
+        setMessage(`Damage can’t be more than the stock at ${store.name}`);
         return;
       }
       locationDamage.push({
@@ -373,10 +377,10 @@ export function AdminScreen({
       } else {
         const n = Number(kgPerSackStr);
         if (!Number.isFinite(n) || n <= 0) {
-          setMessage('Enter a valid kg per sack');
+          setMessage('Enter kg per sack (must be more than 0)');
           return;
         }
-        kgPerSack = n.toFixed(3);
+        kgPerSack = n.toFixed(2);
       }
     }
 
@@ -430,13 +434,13 @@ export function AdminScreen({
       });
       setMessage(
         damageLogged > 0
-          ? `Updated ${name} (recorded damage at ${damageLogged} location${damageLogged === 1 ? '' : 's'})`
-          : `Updated ${name}`
+          ? `Saved ${name} (damage logged at ${damageLogged} store${damageLogged === 1 ? '' : 's'})`
+          : `Saved ${name}`
       );
       clearProductDrafts(product.id);
       setProductModal(null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Update failed');
+      setMessage(err instanceof Error ? err.message : 'Could not save product');
     } finally {
       setBusy(false);
     }
@@ -445,7 +449,7 @@ export function AdminScreen({
   async function addProduct(e?: React.FormEvent) {
     e?.preventDefault();
     if (!hasStore) {
-      setMessage('No store assignment found');
+      setMessage('Your account is not linked to a store yet');
       return;
     }
 
@@ -456,11 +460,11 @@ export function AdminScreen({
     const pricePesos = Number(newPrice);
 
     if (!name) {
-      setMessage('Product name is required');
+      setMessage('Type a product name');
       return;
     }
     if (!Number.isFinite(pricePesos) || pricePesos < 0) {
-      setMessage('Enter a valid price');
+      setMessage('Enter a price (0 or more)');
       return;
     }
 
@@ -470,14 +474,14 @@ export function AdminScreen({
       if (raw === '') continue;
       const qty = Number(raw);
       if (!Number.isFinite(qty) || qty < 0) {
-        setMessage(`Enter a valid stock quantity for ${store.name}`);
+        setMessage(`Enter a stock amount for ${store.name}`);
         return;
       }
       locationQtys.push({ storeId: store.id, qty });
     }
 
     if (locationQtys.length === 0) {
-      setMessage('Assign stock at least at one location (use 0 if out of stock)');
+      setMessage('Put an opening count at least at one store (use 0 if none yet)');
       return;
     }
 
@@ -488,10 +492,10 @@ export function AdminScreen({
       } else {
         const n = Number(newKgPerSack);
         if (!Number.isFinite(n) || n <= 0) {
-          setMessage('Enter a valid kg per sack');
+          setMessage('Enter kg per sack (must be more than 0)');
           return;
         }
-        kgPerSack = n.toFixed(3);
+        kgPerSack = n.toFixed(2);
       }
     }
 
@@ -554,7 +558,7 @@ export function AdminScreen({
       setNewSellable(true);
       setProductModal(null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Add product failed');
+      setMessage(err instanceof Error ? err.message : 'Could not add product');
     } finally {
       setBusy(false);
     }
@@ -563,7 +567,7 @@ export function AdminScreen({
   async function saveCategory(category: CategoryRecord) {
     const name = (draftCategoryName[category.id] ?? category.name ?? '').trim();
     if (!name) {
-      setMessage('Category name is required');
+      setMessage('Type a category name');
       return;
     }
 
@@ -575,7 +579,7 @@ export function AdminScreen({
         `UPDATE ${CATEGORIES_TABLE} SET name = ?, updated_at = ? WHERE id = ?`,
         [name, now, category.id]
       );
-      setMessage(`Updated ${name}`);
+      setMessage(`Saved ${name}`);
       setDraftCategoryName((prev) => {
         const next = { ...prev };
         delete next[category.id];
@@ -583,7 +587,7 @@ export function AdminScreen({
       });
       setCategoryModal(null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Update category failed');
+      setMessage(err instanceof Error ? err.message : 'Could not save category');
     } finally {
       setBusy(false);
     }
@@ -592,13 +596,13 @@ export function AdminScreen({
   async function addCategory(e?: React.FormEvent) {
     e?.preventDefault();
     if (!hasStore) {
-      setMessage('No store assignment found');
+      setMessage('Your account is not linked to a store yet');
       return;
     }
 
     const name = newCategoryName.trim();
     if (!name) {
-      setMessage('Category name is required');
+      setMessage('Type a category name');
       return;
     }
 
@@ -616,7 +620,7 @@ export function AdminScreen({
       setNewCategoryName('');
       setCategoryModal(null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Add category failed');
+      setMessage(err instanceof Error ? err.message : 'Could not add category');
     } finally {
       setBusy(false);
     }
@@ -624,7 +628,7 @@ export function AdminScreen({
 
   async function deleteCategory(category: CategoryRecord) {
     if (isRiceCategory(category)) {
-      setMessage('Rice category cannot be deleted');
+      setMessage('Rice can’t be deleted — it’s built in for kg sales');
       return;
     }
 
@@ -642,7 +646,7 @@ export function AdminScreen({
       setMessage(`Deleted ${category.name}`);
       setCategoryModal(null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Delete category failed');
+      setMessage(err instanceof Error ? err.message : 'Could not delete category');
     } finally {
       setBusy(false);
     }
@@ -657,14 +661,14 @@ export function AdminScreen({
         serializePaymentMethods(toggles),
         store.id
       ]);
-      setMessage(`Updated payment options for ${store.name}`);
+      setMessage(`Saved payment buttons for ${store.name}`);
       setPaymentDraft((prev) => {
         const next = { ...prev };
         delete next[store.id];
         return next;
       });
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Update payments failed');
+      setMessage(err instanceof Error ? err.message : 'Could not save payment buttons');
     } finally {
       setBusy(false);
     }
@@ -673,17 +677,17 @@ export function AdminScreen({
   async function linkStaff(e: React.FormEvent) {
     e.preventDefault();
     if (!staffStoreId) {
-      setMessage('No store assignment found');
+      setMessage('Pick a store first');
       return;
     }
     if (!navigator.onLine) {
-      setMessage('Linking staff needs network');
+      setMessage('Need internet to add staff');
       return;
     }
 
     const uid = linkUserId.trim();
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uid)) {
-      setMessage('Paste a valid Auth user UUID');
+      setMessage('Paste the full user ID (looks like a long code with dashes)');
       return;
     }
 
@@ -695,12 +699,12 @@ export function AdminScreen({
         { onConflict: 'user_id,store_id' }
       );
       if (error) throw error;
-      setMessage('Staff linked');
+      setMessage('Staff added to this store');
       setLinkUserId('');
       setLinkRole('cashier');
       await loadStaff();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Link staff failed');
+      setMessage(err instanceof Error ? err.message : 'Could not add staff');
     } finally {
       setBusy(false);
     }
@@ -708,11 +712,11 @@ export function AdminScreen({
 
   async function updateStaffRole(row: StaffRow, role: StaffRole) {
     if (!navigator.onLine) {
-      setMessage('Updating staff needs network');
+      setMessage('Need internet to change roles');
       return;
     }
     if (row.user_id === userId && role !== 'admin') {
-      setMessage('You cannot remove your own admin role');
+      setMessage('You can’t remove your own Admin role');
       return;
     }
 
@@ -725,10 +729,10 @@ export function AdminScreen({
         .eq('user_id', row.user_id)
         .eq('store_id', row.store_id);
       if (error) throw error;
-      setMessage('Role updated');
+      setMessage('Role saved');
       await loadStaff();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Update role failed');
+      setMessage(err instanceof Error ? err.message : 'Could not change role');
     } finally {
       setBusy(false);
     }
@@ -736,11 +740,11 @@ export function AdminScreen({
 
   async function removeStaff(row: StaffRow) {
     if (!navigator.onLine) {
-      setMessage('Removing staff needs network');
+      setMessage('Need internet to remove staff');
       return;
     }
     if (row.user_id === userId) {
-      setMessage('You cannot remove your own store assignment');
+      setMessage('You can’t remove yourself from this store');
       return;
     }
 
@@ -753,10 +757,10 @@ export function AdminScreen({
         .eq('user_id', row.user_id)
         .eq('store_id', row.store_id);
       if (error) throw error;
-      setMessage('Staff removed');
+      setMessage('Staff removed from this store');
       await loadStaff();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Remove staff failed');
+      setMessage(err instanceof Error ? err.message : 'Could not remove staff');
     } finally {
       setBusy(false);
     }
@@ -789,10 +793,10 @@ export function AdminScreen({
 
   const headerHint =
     section === 'users'
-      ? 'Manage staff and which payment options each store uses'
+      ? 'Who can use each store, and which pay buttons cashiers see'
       : section === 'categories'
-        ? 'Organize products with catalog categories. Rice is a built-in preset for kg sales.'
-        : 'One catalog. Stock is per location — leave a cell blank if the product is not carried there.';
+        ? 'Group products so they’re easier to find. Rice is built in for kg sales.'
+        : 'Same products for every store. Stock numbers are per store — leave blank if that store doesn’t carry it.';
 
   const successMessage =
     message?.startsWith('Updated') ||
@@ -800,8 +804,9 @@ export function AdminScreen({
     message?.startsWith('Deleted') ||
     message?.startsWith('Staff') ||
     message?.startsWith('Role') ||
-    message?.startsWith('Received') ||
-    message?.startsWith('Added');
+    message?.startsWith('Saved') ||
+    message?.startsWith('Count') ||
+    message?.startsWith('Received');
 
   return (
     <div className="panel-view">
@@ -820,7 +825,7 @@ export function AdminScreen({
         <section className="inventory-section">
           {section === 'all' && <h2>Categories</h2>}
           {section === 'all' && (
-            <p className="muted">Rename categories or add new ones. Rice cannot be deleted.</p>
+            <p className="muted">Rename groups or add new ones. Rice can’t be deleted.</p>
           )}
 
           <div className="inventory-list desktop-only">
@@ -859,7 +864,7 @@ export function AdminScreen({
                     type="button"
                     className="inventory-action inventory-action-secondary"
                     disabled={busy || rice}
-                    title={rice ? 'Rice cannot be deleted' : 'Delete category'}
+                    title={rice ? 'Rice can’t be deleted' : 'Delete category'}
                     onClick={() => void deleteCategory(category)}
                   >
                     Delete
@@ -938,9 +943,8 @@ export function AdminScreen({
             {section === 'all' && <h2>Stock</h2>}
           {section === 'all' && (
             <p className="muted">
-              Edit name, price, and unit. New deliveries go through Add stock. Use Fix when the
-              shelf count is wrong. Enter damaged qty and Save to log a loss. Blank stock means not
-              carried there.
+              Edit name, price, and unit. New deliveries: Add stock. Wrong shelf number: Fix.
+              Spoiled or broken: type Damage and Save. Blank stock means this store doesn’t carry it.
             </p>
           )}
 
@@ -948,7 +952,7 @@ export function AdminScreen({
             <div className="inventory-receive-bar">
               {inventoryStores.length > 1 && (
                 <label className="inventory-receive-store">
-                  <span className="sr-only">Receive into store</span>
+                  <span className="sr-only">Add stock into store</span>
                   <select
                     value={receiveStoreId || inventoryStores[0]?.id || ''}
                     onChange={(e) => setReceiveStoreId(e.target.value)}
@@ -984,13 +988,13 @@ export function AdminScreen({
                   <span className="inventory-stock inventory-stock-cell" title={store.name ?? undefined}>
                     {store.name}
                   </span>
-                  <span className="inventory-damage" title={`Damaged at ${store.name}`}>
-                    Dmg
+                  <span className="inventory-damage" title={`Damage at ${store.name}`}>
+                    Damage
                   </span>
                 </Fragment>
               ))}
               <span className="inventory-unit">Unit</span>
-              {showKgPerSackColumn && <span className="inventory-sack">Kg/sack</span>}
+              {showKgPerSackColumn && <span className="inventory-sack">Kg per sack</span>}
               <span className="inventory-sellable">For sale</span>
               <span className="inventory-action" />
             </div>
@@ -1084,7 +1088,7 @@ export function AdminScreen({
                         </div>
                         <input
                           className="inventory-damage"
-                          aria-label={`Damaged qty for ${product.name} at ${store.name}`}
+                          aria-label={`Damage for ${product.name} at ${store.name}`}
                           type="text"
                           inputMode="decimal"
                           placeholder="0"
@@ -1114,7 +1118,7 @@ export function AdminScreen({
                         aria-label={`Kg per sack for ${product.name}`}
                         type="number"
                         min="0"
-                        step="0.001"
+                        step="0.01"
                         placeholder="—"
                         value={kgPerSackVal}
                         onChange={(e) =>
@@ -1286,15 +1290,15 @@ export function AdminScreen({
                     aria-label="New product kg per sack"
                     type="number"
                     min="0"
-                    step="0.001"
-                    placeholder="Kg/sack"
+                    step="0.01"
+                    placeholder="Kg per sack"
                     value={newKgPerSack}
                     onChange={(e) => setNewKgPerSack(e.target.value)}
                   />
                 ) : (
                   <span className="inventory-sack" />
                 ))}
-              <label className="inventory-sellable" title="Uncheck for internal supplies">
+              <label className="inventory-sellable" title="Uncheck for store supplies only">
                 <span className="sr-only">For sale</span>
                 <input
                   type="checkbox"
@@ -1315,7 +1319,7 @@ export function AdminScreen({
           <section className="card">
             {section === 'all' && <h2>Payment options</h2>}
             {section !== 'all' && <h2>Payment options</h2>}
-            <p className="muted">Choose which tender buttons cashiers see at each location.</p>
+            <p className="muted">Choose which pay buttons cashiers see at each store.</p>
 
             {stores.map((store) => {
               const toggles = paymentTogglesFor(store);
@@ -1358,8 +1362,8 @@ export function AdminScreen({
           <section className="card">
             {section === 'all' && <h2>Staff</h2>}
             <p className="muted">
-              Create the Auth user in Supabase first (Auth → Users), copy their UUID, then link them here.
-              Staff list requires network. Pick a location to manage its staff.
+              Create their login in the admin website first, copy their user ID, then add them here.
+              Need internet for this list. Pick a store to manage its staff.
             </p>
 
             {stores.length > 1 && (
@@ -1384,7 +1388,7 @@ export function AdminScreen({
               <table className="staff-table">
                 <thead>
                   <tr>
-                    <th>User ID</th>
+                    <th>Person</th>
                     <th>Role</th>
                     <th />
                   </tr>
@@ -1402,9 +1406,11 @@ export function AdminScreen({
                           disabled={busy}
                           onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
                         >
-                          <option value="cashier">cashier</option>
-                          <option value="inventory_manager">inventory</option>
-                          <option value="admin">admin</option>
+                          <option value="cashier">{staffRoleLabel('cashier')}</option>
+                          <option value="inventory_manager">
+                            {staffRoleLabel('inventory_manager')}
+                          </option>
+                          <option value="admin">{staffRoleLabel('admin')}</option>
                         </select>
                       </td>
                       <td>
@@ -1443,9 +1449,11 @@ export function AdminScreen({
                     aria-label={`Role for ${row.user_id}`}
                     onChange={(e) => void updateStaffRole(row, e.target.value as StaffRole)}
                   >
-                    <option value="cashier">cashier</option>
-                    <option value="inventory_manager">inventory</option>
-                    <option value="admin">admin</option>
+                    <option value="cashier">{staffRoleLabel('cashier')}</option>
+                    <option value="inventory_manager">
+                      {staffRoleLabel('inventory_manager')}
+                    </option>
+                    <option value="admin">{staffRoleLabel('admin')}</option>
                   </select>
                   <button
                     type="button"
@@ -1464,32 +1472,34 @@ export function AdminScreen({
             </div>
 
             <form className="admin-form admin-form-no-border" onSubmit={(e) => void linkStaff(e)}>
-              <h3>Link Auth user</h3>
+              <h3>Add staff</h3>
               <div className="inventory-row inventory-add link-staff-row">
                 <input
                   className="inventory-name"
-                  aria-label="User UUID"
+                  aria-label="User ID"
                   value={linkUserId}
                   onChange={(e) => setLinkUserId(e.target.value)}
-                  placeholder="User UUID"
+                  placeholder="Paste user ID"
                   required
                 />
                 <select
-                  className="inventory-unit inventory-unit-input"
+                  className="link-staff-role"
                   aria-label="Role"
                   value={linkRole}
                   onChange={(e) => setLinkRole(e.target.value as StaffRole)}
                 >
-                  <option value="cashier">cashier</option>
-                  <option value="inventory_manager">inventory</option>
-                  <option value="admin">admin</option>
+                  <option value="cashier">{staffRoleLabel('cashier')}</option>
+                  <option value="inventory_manager">
+                    {staffRoleLabel('inventory_manager')}
+                  </option>
+                  <option value="admin">{staffRoleLabel('admin')}</option>
                 </select>
                 <button
                   type="submit"
                   className="inventory-action"
                   disabled={busy || !staffStoreId || !navigator.onLine}
                 >
-                  Link
+                  Add
                 </button>
               </div>
             </form>
@@ -1637,7 +1647,7 @@ export function AdminScreen({
                     <input
                       type="number"
                       min="0"
-                      step="0.001"
+                      step="0.01"
                       placeholder="—"
                       value={kgPerSackVal}
                       onChange={(e) => {
@@ -1669,7 +1679,7 @@ export function AdminScreen({
                       }
                     }}
                   />
-                  <span className="muted">Uncheck for internal supplies (hidden from cashier)</span>
+                  <span className="muted">Uncheck for store supplies only (hidden when selling)</span>
                 </label>
                 {inventoryStores.map((store) => (
                   <div key={store.id} className="modal-stock-group">
@@ -1703,7 +1713,7 @@ export function AdminScreen({
                           </span>
                         </div>
                         <label className="modal-field">
-                          <span>Damaged · {store.name}</span>
+                          <span>Damage · {store.name}</span>
                           <input
                             type="text"
                             inputMode="decimal"
@@ -1818,7 +1828,7 @@ export function AdminScreen({
                 </label>
                 {!isAdd && (
                   <p className="muted" style={{ margin: 0 }}>
-                    Type: {rice ? 'Rice (preset)' : 'Custom'}
+                    Type: {rice ? 'Rice (built-in)' : 'Custom'}
                   </p>
                 )}
               </div>

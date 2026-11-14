@@ -86,13 +86,13 @@ export function CashPaymentModal({
 
         {tenderedCents !== null && !cashSufficient && (
           <p className="cash-warn" role="alert">
-            Cash received must be at least {formatMoney(totalCents)}.
+            Need at least {formatMoney(totalCents)} in cash.
           </p>
         )}
 
         <div className="cash-actions">
           <button type="button" className="cash-cancel" onClick={onCancel}>
-            Cancel
+            Back
           </button>
           <button
             type="button"
@@ -100,7 +100,7 @@ export function CashPaymentModal({
             disabled={!cashSufficient || busy}
             onClick={confirm}
           >
-            Confirm
+            Save sale
           </button>
         </div>
       </div>

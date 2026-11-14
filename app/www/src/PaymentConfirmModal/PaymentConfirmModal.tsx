@@ -44,11 +44,11 @@ export function PaymentConfirmModal({
           <strong className="cash-amount">{formatMoney(totalCents)}</strong>
         </div>
 
-        <p className="payment-confirm-message">Save this sale?</p>
+        <p className="payment-confirm-message">Save this sale as paid?</p>
 
         <div className="cash-actions">
           <button type="button" className="cash-cancel" onClick={onCancel}>
-            No
+            Back
           </button>
           <button
             type="button"
@@ -57,7 +57,7 @@ export function PaymentConfirmModal({
             autoFocus
             onClick={confirm}
           >
-            Yes
+            Save sale
           </button>
         </div>
       </div>

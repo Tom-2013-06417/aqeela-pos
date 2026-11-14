@@ -12,25 +12,12 @@ import {
   paymentStatusLabel,
   type PaymentMethod
 } from '../schema';
+import { formatDate, formatDateTime } from '../formatDate';
 import '../styles/panel-view.css';
 import './LedgerScreen.css';
 
 function formatMoney(cents: number) {
   return `₱${(cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-}
-
-function formatWhen(iso: string | null) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
 }
 
 type ReceiptRow = {
@@ -119,7 +106,11 @@ export function LedgerScreen() {
   );
 
   async function markReceiptPaid(receipt: ReceiptRow) {
-    if (!window.confirm(`Mark ${formatMoney(receipt.total_cents)} as already paid to the supplier?`)) {
+    if (
+      !window.confirm(
+        `Mark ${formatMoney(receipt.total_cents)} as already paid to the supplier?`
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -219,7 +210,7 @@ export function LedgerScreen() {
                         ? ` · ${sale.store_name ?? 'Store'}`
                         : ''}
                     </span>
-                    <span className="muted ledger-when">{formatWhen(sale.created_at)}</span>
+                    <span className="muted ledger-when">{formatDateTime(sale.created_at)}</span>
                   </div>
                   {settleSaleId === sale.id ? (
                     <div className="ledger-settle">
@@ -291,10 +282,10 @@ export function LedgerScreen() {
                       </span>
                       <span className="muted ledger-when">
                         {receipt.payment_status === 'pending'
-                          ? `Pay by ${formatWhen(receipt.due_at)}`
-                          : `Paid on ${formatWhen(receipt.paid_at)}`}
+                          ? `Pay by ${formatDate(receipt.due_at)}`
+                          : `Paid on ${formatDate(receipt.paid_at)}`}
                         {' · '}
-                        Added {formatWhen(receipt.created_at)}
+                        Added {formatDateTime(receipt.created_at)}
                       </span>
                     </div>
                     {receipt.payment_status === 'pending' && (
